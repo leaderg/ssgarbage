@@ -41,15 +41,15 @@ class OrderReviewModal extends Component {
                     <table>
                         <tr>
                             <td>
-                                Sooke Detailing<br/>
-                                6681 Logan Lane<br/>
-                                Sooke, BC  V9Z 1A0
+                                Salt Spring Garbage<br/>
+                                360 Blackburn<br/>
+                                Salt Spring Island, BC V8K2B8
                             </td>
 
                             <td>
-                                {this.props.info.employee[0] ? this.props.info.employee[0].first_name : 'Sooke Detail'}<br/>
-                                (778) 352-2211<br/>
-                                info@mysookecarwash.ca
+                                {this.props.info.employee[0] ? this.props.info.employee[0].first_name : 'Salt Spring Garbage'}<br/>
+                                (250) 537-2167<br/>
+                                ssgarbage@shaw.ca
                             </td>
                         </tr>
                     </table>

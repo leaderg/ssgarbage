@@ -1,7 +1,7 @@
 module.exports = {
   development: {
     client: 'pg',
-    connection:'postgres://postgres:590363002@localhost/sookedetailing',
+    connection:'postgres://postgres:590363002@localhost/ssgarbage',
     migrations: {
       directory: './db/migrations'
     },
@@ -13,7 +13,7 @@ module.exports = {
 
   test: {
     client: 'pg',
-    connection:'postgres://localhost/sookedetailing_test',
+    connection:'postgres://localhost/ssgarbage_test',
     migrations: {
       directory: './db/migrations'
     },

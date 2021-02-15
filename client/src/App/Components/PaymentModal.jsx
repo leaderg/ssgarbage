@@ -23,10 +23,10 @@ class ComponentToPrint extends React.Component {
     return (
       <div>
         <div className="receipt-header">
-          <h3>Sooke Car Wash & Detailing</h3>
-          6681 Logan Lane<br/>
-          Sooke, BC V9Z 1A0<br/>
-          778-352-2211<br/>
+          <h3>Salt Spring Garbage</h3>
+          360 Blackburn<br/>
+          Salt Spring Island, BC V8K2B8<br/>
+          (250) 537-2167<br/>
         </div>
 
         <div className="receipt-line-items">
@@ -66,8 +66,8 @@ class ComponentToPrint extends React.Component {
 
 
         <div className="receipt-footer">
-          Thank you for choosing Sooke Car Wash!<br/>
-          GST# 790382287
+          Thank you for choosing Salt Spring Garbage!<br/>
+          GST# Get Number
         </div>
       </div>
     );

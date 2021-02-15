@@ -274,7 +274,7 @@ class Reports extends Component {
       <PDFDownloadLink document={
         <Document>
           <Page size="A4" style={styles.page}>
-            <Text style={styles.header}>Sooke Detailing Sales Report</Text>
+            <Text style={styles.header}>SS Garbage Sales Report</Text>
             <View>
               <Text>Date Range:</Text>
               <Text>From {moment(this.state.startDate).format('MM-DD-YYYY')} to {moment(this.state.endDate).format('MM-DD-YYYY')}</Text>
@@ -340,7 +340,7 @@ class Reports extends Component {
 
           </Page>
         </Document>
-      } fileName={`SookeSales${moment(this.state.startDate).format('YYYY-MM-DD')}to${moment(this.state.endDate).format('YYYY-MM-DD')}.pdf`}>
+      } fileName={`SSGarbageSales${moment(this.state.startDate).format('YYYY-MM-DD')}to${moment(this.state.endDate).format('YYYY-MM-DD')}.pdf`}>
       {({ blob, url, loading, error }) => (<div className="download-button">{loading ? 'Loading document...' : 'Download Report!'}</div>)}
       </PDFDownloadLink>
 
@@ -400,7 +400,7 @@ class Reports extends Component {
         <PDFDownloadLink document={
         <Document>
           <Page size="A4" style={styles.page}>
-            <Text style={styles.header}>Sooke Detailing Order Report</Text>
+            <Text style={styles.header}>SS Garbage Order Report</Text>
             <View>
               <Text>Date Range:</Text>
               <Text>From {moment(this.state.startDate).format('MM-DD-YYYY')} to {moment(this.state.endDate).format('MM-DD-YYYY')}</Text>
@@ -457,7 +457,7 @@ class Reports extends Component {
 
           </Page>
         </Document>
-      } fileName={`SookeOrders${moment(this.state.startDate).format('YYYY-MM-DD')}to${moment(this.state.endDate).format('YYYY-MM-DD')}.pdf`}>
+      } fileName={`SSGarbageOrders${moment(this.state.startDate).format('YYYY-MM-DD')}to${moment(this.state.endDate).format('YYYY-MM-DD')}.pdf`}>
       {({ blob, url, loading, error }) => (<div>{loading ? 'Loading document...' : 'Download Report!'}</div>)}
       </PDFDownloadLink>
 {/*================================*/}
