@@ -95,7 +95,7 @@ class Register extends Component {
     axios
     .post(`/api/orderbuild`, { order, lineItems, payments })
     .then(res => {
-      cb(this.toDollars(change));
+      cb(this.toDollars(change), res.data);
     })
   }
 

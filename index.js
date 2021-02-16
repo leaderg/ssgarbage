@@ -217,7 +217,6 @@ app.post('/api/customers', (req,res) => {
 app.post('/api/customers/:customerId', (req,res) => {
   let customerId = req.params.customerId;
   let customer = req.body.customer
-  console.dir(customer)
 
   knex('customers')
   .where({id: customer.id})
@@ -254,25 +253,25 @@ app.post('/api/orderbuild', (req,res) => {
     total: order.total,
     last_visited: order.lastVisited
   })
-  .returning('id')
+  .returning(['id', 'last_visited'])
   .then(orderId => {
     payments.forEach(item => {
       item.payment_method == "Charge" ?
         charges.push({
           customer_id: order.customer_id,
           amount: item.amount,
-          order_id: orderId[0]
+          order_id: orderId[0].id
         }) : null
     })
 
     lineItems.forEach(item => {
-      item.order_id = orderId[0];
+      item.order_id = orderId[0].id;
     })
     knex('line_items')
     .insert(lineItems)
     .then((entry)=> {
       payments.forEach(payment => {
-        payment.order_id = orderId[0];
+        payment.order_id = orderId[0].id;
       })
       knex('payments')
       .insert(payments)
@@ -280,9 +279,9 @@ app.post('/api/orderbuild', (req,res) => {
         charges.length > 0 ?
         knex('charges')
         .insert(charges)
-        .then(entry => res.sendStatus(200))
+        .then(entry => res.json(orderId[0]))
         :
-        res.sendStatus(200)})
+        res.json(orderId[0])})
     })
   })
   .catch(err => res.send(err))
