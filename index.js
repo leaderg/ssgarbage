@@ -321,11 +321,11 @@ app.get('/api/orders/:orderId', (req, res) => {
   })
 })
 
-
 app.post('/api/rangereport', (req,res) => {
   let { startDate, endDate } = req.body.dates;
   let orderIds = [];
-  let lineItemIds = []
+  let lineItemIds = [];
+  let chargeIds = [];
   knex('orders')
   .select(['orders.id', 'orders.last_visited', 'orders.tax', 'orders.total', 'orders.discount', 'customers.name as customer_name', 'employees.first_name as employee_name'])
   .where('last_visited', '>=', startDate.toString())
@@ -347,12 +347,17 @@ app.post('/api/rangereport', (req,res) => {
       .join('products', 'line_items.product_id', '=', 'products.id')
       .sum('quantity')
       .then((lineItems => {
+        knex('charges')
+        .whereIn('order_id', orderIds)
+        .then(charges => {
           let output = {
             orders: orders,
             payments: payments,
             productReport: lineItems,
+            chargeReport: charges
           }
           res.json(output)
+        })
       }))
     }))
   })

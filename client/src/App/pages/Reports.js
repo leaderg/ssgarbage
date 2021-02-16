@@ -88,6 +88,7 @@ class Reports extends Component {
       },
       orders: [],
       productReport: [],
+      chargeReport: []
     }
   }
 
@@ -148,6 +149,7 @@ class Reports extends Component {
     .then(res => {
       let orders = res.data.orders;
       let productReport = res.data.productReport
+      let chargeReport = res.data.chargeReport
       let totalDiscount = 0
       let totalSales = 0
       let totalTax = 0
@@ -165,7 +167,7 @@ class Reports extends Component {
         charge: this.paymentTypeTotal(res.data.payments, "Charge")
       }
 
-      this.setState({ orders, totalDiscount, totalSales, totalTax, productReport, transactionAverage, payments, startDate, endDate })
+      this.setState({ orders, totalDiscount, totalSales, totalTax, productReport, chargeReport, transactionAverage, payments, startDate, endDate })
     })
   }
 
