@@ -62,6 +62,13 @@ const styles = {
     borderLeftWidth: 0,
     borderTopWidth: 0
   },
+  biCol: {
+    width: "50%",
+    borderStyle: "solid",
+    borderWidth: 1,
+    borderLeftWidth: 0,
+    borderTopWidth: 0
+  },
   cell: {
     margin: "auto",
     marginTop: 5,
@@ -88,7 +95,8 @@ class Reports extends Component {
       },
       orders: [],
       productReport: [],
-      chargeReport: []
+      chargeReport: [],
+      chargeReportByCustomer: []
     }
   }
 
@@ -570,6 +578,54 @@ class Reports extends Component {
 
           <div style={{marginBottom: "100px"}}>
             <h3>Charges</h3>
+
+{/*===============================*/}
+        <PDFDownloadLink document={
+        <Document>
+          <Page size="A4" style={styles.page}>
+            <Text style={styles.header}>SS Garbage Charge Report</Text>
+            <View>
+              <Text>Date Range:</Text>
+              <Text>From {moment(this.state.startDate).format('MM-DD-YYYY')} to {moment(this.state.endDate).format('MM-DD-YYYY')}</Text>
+            </View>
+            <Text style={styles.title}>Total Charge Amount By Customer In Date Range</Text>
+            <View style={styles.section}>
+              <View style={styles.table}>
+                <View style={styles.row}>
+                  <View style={styles.biCol}>
+                    <Text style={styles.cell}>Customer</Text>
+                  </View>
+                  <View style={styles.biCol}>
+                    <Text style={styles.cell}>Amount</Text>
+                  </View>
+                </View>
+                {this.state.chargeReportByCustomer.length === 0 ? (
+
+                <Text style={styles.header}>No Orders In This Date Range</Text>
+
+                 ) : (
+
+                this.state.chargeReportByCustomer.map(customer => {
+                return(
+                <View style={styles.row}>
+                  <View style={styles.biCol}>
+                    <Text style={styles.cell}>{customer.customer_name || 'Unassigned'}</Text>
+                  </View>
+                  <View style={styles.biCol}>
+                    <Text style={styles.cell}>${this.toDollars(customer.sum)}</Text>
+                  </View>
+                </View>
+
+                )}))}
+              </View>
+            </View>
+          </Page>
+        </Document>
+      } fileName={`SSGarbageCharges${moment(this.state.startDate).format('YYYY-MM-DD')}to${moment(this.state.endDate).format('YYYY-MM-DD')}.pdf`}>
+      {({ blob, url, loading, error }) => (<div>{loading ? 'Loading document...' : 'Download Report!'}</div>)}
+      </PDFDownloadLink>
+{/*================================*/}
+
             <div class="report-wrapper">
               <div class="report-table">
               <div class="report-row report-header">
@@ -598,7 +654,7 @@ class Reports extends Component {
                       ${this.toDollars(charge.amount)}
                     </div>
                     <div class="report-cell" data-title="Qty">
-                      {charge.customer_name}
+                      {charge.customer_name || "Unassigned"}
                     </div>
                     <div class="report-cell" data-title="Total">
                       {moment(charge.last_visited).format('YYYY-MM-DD')}
