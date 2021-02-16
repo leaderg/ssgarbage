@@ -567,6 +567,48 @@ class Reports extends Component {
             </div>
           </div>
 
+          <div style={{marginBottom: "100px"}}>
+            <h3>Charges</h3>
+            <div class="report-wrapper">
+              <div class="report-table">
+              <div class="report-row report-header">
+                <div class="report-cell">
+                  Order #
+                </div>
+                <div class="report-cell">
+                  Amount
+                </div>
+                <div class="report-cell">
+                  Customer Name
+                </div>
+                <div class="report-cell">
+                  Date
+                </div>
+              </div>
+
+              {this.state.chargeReport.map((charge) => {
+                return(
+
+                  <div class="report-row">
+                    <div class="report-cell" data-title="Product Name">
+                      {charge.order_id}
+                    </div>
+                    <div class="report-cell" data-title="Price">
+                      ${this.toDollars(charge.amount)}
+                    </div>
+                    <div class="report-cell" data-title="Qty">
+                      {charge.customer_name}
+                    </div>
+                    <div class="report-cell" data-title="Total">
+                      {moment(charge.last_visited).format('YYYY-MM-DD')}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            </div>
+          </div>
+
       <OrderReviewModal info={this.state.singleOrderInfo} close={this.closeOrderModal}/>
     </div>
     );
