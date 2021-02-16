@@ -352,13 +352,22 @@ app.post('/api/rangereport', (req,res) => {
         .whereIn('order_id', orderIds)
         .leftJoin('customers', 'charges.customer_id', '=', 'customers.id')
         .then(charges => {
-          let output = {
-            orders: orders,
-            payments: payments,
-            productReport: lineItems,
-            chargeReport: charges
-          }
-          res.json(output)
+          knex('charges')
+          .select(['customers.name as customer_name'])
+          .whereIn('order_id', orderIds)
+          .leftJoin('customers', 'charges.customer_id', '=', 'customers.id')
+          .sum('charges.amount')
+          .groupBy(['customers.name'])
+          .then(chargesByCustomer => {
+            let output = {
+              orders: orders,
+              payments: payments,
+              productReport: lineItems,
+              chargeReport: charges,
+              chargeReportByCustomer: chargesByCustomer
+            }
+            res.json(output)
+          })
         })
       }))
     }))
