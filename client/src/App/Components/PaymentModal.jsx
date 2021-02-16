@@ -208,7 +208,7 @@ class PaymentsModal extends Component {
             <button onClick={() => this.createPayment("Cash")}>Cash</button>
             <button onClick={() => this.createPayment("Debit")}>Debit</button>
             <button onClick={() => this.createPayment("Credit")}>Credit</button>
-            <button onClick={() => this.createPayment("Gift Card")}>Gift Card</button>
+            <button onClick={() => this.createPayment("Charge")}>Charge</button>
           </div>
           <div className="cr-payment-button-cancel noselect" onClick={() => this.hideModal()}>Cancel</div>
           <div className="customer-button-confirm noselect" onClick={() => this.props.newOrderSubmit(this.state.payments, this.receiptView)}>Checkout</div>

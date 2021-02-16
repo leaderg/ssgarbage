@@ -84,7 +84,7 @@ class Reports extends Component {
         cash: 0,
         debit: 0,
         credit: 0,
-        giftCard: 0
+        charge: 0
       },
       orders: [],
       productReport: [],
@@ -162,7 +162,7 @@ class Reports extends Component {
         cash: this.paymentTypeTotal(res.data.payments, "Cash"),
         debit: this.paymentTypeTotal(res.data.payments, "Debit"),
         credit: this.paymentTypeTotal(res.data.payments, "Credit"),
-        giftCard: this.paymentTypeTotal(res.data.payments, "Gift Card")
+        charge: this.paymentTypeTotal(res.data.payments, "Charge")
       }
 
       this.setState({ orders, totalDiscount, totalSales, totalTax, productReport, transactionAverage, payments, startDate, endDate })
@@ -302,13 +302,13 @@ class Reports extends Component {
               <Text style={styles.tallyLine}>Cash</Text>
               <Text style={styles.tallyLine}>Debit</Text>
               <Text style={styles.tallyLine}>Credit</Text>
-              <Text style={styles.tallyLine}>Gift Card</Text>
+              <Text style={styles.tallyLine}>Charge</Text>
               </View>
               <View style={styles.value}>
               <Text style={styles.tallyLine}>${this.toDollars(this.state.payments.cash)}</Text>
               <Text style={styles.tallyLine}>${this.toDollars(this.state.payments.debit)}</Text>
               <Text style={styles.tallyLine}>${this.toDollars(this.state.payments.credit)}</Text>
-              <Text style={styles.tallyLine}>${this.toDollars(this.state.payments.giftCard)}</Text>
+              <Text style={styles.tallyLine}>${this.toDollars(this.state.payments.charge)}</Text>
               </View>
             </View>
             <Text style={styles.title}>Employee Net Sales</Text>
@@ -385,8 +385,8 @@ class Reports extends Component {
                   <span>${this.toDollars(this.state.payments.credit)}</span>
                 </div>
                 <div>
-                  <span className="report-payment-type">Gift Card</span>
-                  <span>${this.toDollars(this.state.payments.giftCard)}</span>
+                  <span className="report-payment-type">Charge</span>
+                  <span>${this.toDollars(this.state.payments.charge)}</span>
                 </div>
               </div>
             </div>
