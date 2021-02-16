@@ -348,7 +348,7 @@ app.post('/api/rangereport', (req,res) => {
       .sum('quantity')
       .then((lineItems => {
         knex('charges')
-        .select(['charges.order_id', 'charges.last_visited', 'charges.amount', 'customers.name as customer_name'])
+        .select(['charges.id', 'charges.order_id', 'charges.last_visited', 'charges.amount', 'customers.name as customer_name'])
         .whereIn('order_id', orderIds)
         .leftJoin('customers', 'charges.customer_id', '=', 'customers.id')
         .then(charges => {
