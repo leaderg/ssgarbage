@@ -239,6 +239,11 @@ app.post('/api/orderbuild', (req,res) => {
         if(keep.indexOf(key) === -1)delete lineItems[i][key];
     }
   }
+
+  //Construct a Charge entry
+  let charges = [];
+
+
   knex('orders')
   .insert({
     employee_id: order.employeeId,
@@ -251,6 +256,15 @@ app.post('/api/orderbuild', (req,res) => {
   })
   .returning('id')
   .then(orderId => {
+    payments.forEach(item => {
+      item.payment_method == "Charge" ?
+        charges.push({
+          customer_id: order.customer_id,
+          amount: item.amount,
+          order_id: orderId[0]
+        }) : null
+    })
+
     lineItems.forEach(item => {
       item.order_id = orderId[0];
     })
@@ -262,7 +276,13 @@ app.post('/api/orderbuild', (req,res) => {
       })
       knex('payments')
       .insert(payments)
-      .then((entry) => res.sendStatus(200))
+      .then((entry) => {
+        charges.length > 0 ?
+        knex('charges')
+        .insert(charges)
+        .then(entry => res.sendStatus(200))
+        :
+        res.sendStatus(200)})
     })
   })
   .catch(err => res.send(err))
