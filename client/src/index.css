@@ -30,6 +30,19 @@ code {
 
 /*CASH REGISTER*/
 
+.qty-bar {
+  width: 48px;
+}
+
+.qty-bar::placeholder {
+  color: black;
+  text-align: center;
+}
+
+.qty-bar:focus::placeholder {
+  color: transparent;
+}
+
 div.cr-container {
   width: 90%;
   margin: 0 5%;

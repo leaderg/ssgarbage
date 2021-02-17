@@ -250,6 +250,30 @@ class Register extends Component {
     }
   }
 
+  //Quantity Text Field
+
+  handleKeyPress = ( event, index) => {
+    if(event.key === 'Enter'){
+      if(event.target.value == "") {
+      } else {
+        this.quantityInput(event, index)
+      }
+    }
+  }
+
+  handleBlur = ( event, index) => {
+    if(event.target.value == "") {
+    } else {
+    this.quantityInput(event, index)
+    }
+  }
+
+  quantityInput = ( event, index) => {
+    let qty = Number(event.target.value);
+    event.target.value = "";
+    this.changeQuantity(index, qty)
+  }
+
   changeQuantity(index, newAmount) {
     let order  = {...this.state.order};
     let lineItems = [...this.state.lineItems];
@@ -385,7 +409,13 @@ class Register extends Component {
                     <td>{product.name}</td>
                     <td>
                       <button onClick={() => this.changeQuantity(index, product.quantity-1)}>-</button>
-                       {product.quantity}
+                      <input
+                        type="text"
+                        placeholder={product.quantity}
+                        onKeyPress={(e) => this.handleKeyPress(e, index)}
+                        onBlur={(e) => this.handleBlur(e, index)}
+                        className="qty-bar"
+                      />
                        <button onClick={() => this.changeQuantity(index, product.quantity+1)}>+</button>
                     </td>
                     <td>${this.toDollars(product.price * product.quantity)}</td>
