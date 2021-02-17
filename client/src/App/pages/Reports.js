@@ -107,7 +107,7 @@ class Reports extends Component {
 
   getCategories = () => {
     axios
-      .get(`/api/categories`)
+      .get(`/api/allCategories`)
       .then(res => {
         const categories = res.data;
         this.setState({ categories });

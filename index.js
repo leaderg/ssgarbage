@@ -80,6 +80,13 @@ app.get('/api/categories', (req,res) => {
   });
 })
 
+app.get('/api/allCategories', (req,res) => {
+  knex('categories')
+  .asCallback((err,result) => {
+    res.json(result);
+  });
+})
+
 app.post('/api/categories', (req,res) => {
   let category = req.body.category;
   knex('categories')
