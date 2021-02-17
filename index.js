@@ -74,6 +74,7 @@ app.put('/api/employees/:id', (req,res) => {
 
 app.get('/api/categories', (req,res) => {
   knex('categories')
+  .where({ hidden: false })
   .asCallback((err,result) => {
     res.json(result);
   });
@@ -86,6 +87,15 @@ app.post('/api/categories', (req,res) => {
   .then(entry => res.sendStatus(200))
   .catch(err => {res.send(err)})
 });
+
+app.delete('/api/categories/:categoryId', (req, res) => {
+  knex('categories')
+  .where({id: req.params.categoryId})
+  .update({hidden: true})
+  .then(oldCategory => {
+    res.sendStatus(200);
+  })
+})
 
 app.post('/api/products', (req,res) => {
   let product = req.body.product;

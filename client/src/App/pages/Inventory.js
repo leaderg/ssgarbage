@@ -33,7 +33,7 @@ class Inventory extends Component {
       .get(`/api/categories`)
       .then(res => {
         const categories = res.data;
-        this.setState({ categories });
+        this.setState({ categories, selectedCategoryId: null });
       })
   }
 
@@ -74,6 +74,14 @@ class Inventory extends Component {
     const category = { name: this.state.newCategory };
     axios
     .post(`/api/categories`, { category })
+    .then(res => {
+      this.getCategories();
+    })
+  }
+
+  deleteCategory = event => {
+    axios
+    .delete(`/api/categories/${this.state.selectedCategoryId}`)
     .then(res => {
       this.getCategories();
     })
@@ -229,11 +237,15 @@ class Inventory extends Component {
           </div> )})}
         <h2>Add a Product</h2>
         {createProductForm}
+        <h2>Delete Category</h2>
+      <button onClick={this.deleteCategory}>Delete</button>
       </div> ) : (
       <div className="product-list">
         <h3>No Products found for this category</h3>
         <h2>Add a Product</h2>
         {createProductForm}
+      <h2>Delete Category</h2>
+      <button onClick={this.deleteCategory}>Delete</button>
       </div>))}
       </div>
       <ProductModal
