@@ -309,6 +309,8 @@ app.post('/api/orderbuild', (req,res) => {
 
 app.get('/api/orders', (req, res) => {
   knex('orders')
+  .select(['orders.id', 'orders.last_visited', 'customers.name', 'orders.total'])
+  .leftJoin('customers', 'orders.customer_id', 'customers.id')
   .orderBy('last_visited', 'asc')
   .limit(50)
   .then((orders) => {

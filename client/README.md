@@ -92,3 +92,6 @@ Create a route:
     res.json(results)
   })
 })`
+
+results.data - will hold artist data
+results.pagination - will hold pagination object (total for count)
