@@ -15,6 +15,9 @@ const app = express();
 const knexConfig  = require("./knexfile")[process.env.KNEX];
 const knex        = require("knex")(knexConfig);
 
+const { attachPaginate } = require('knex-paginate');
+attachPaginate();
+
 // Serve the static files from the React app
 app.use(express.static(path.join(__dirname, 'client/build')));
 app.use(bodyParser.urlencoded({ extended: false }));

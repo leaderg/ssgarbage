@@ -25,6 +25,7 @@
     "express": "^4.16.3",
     "jsonwebtoken": "^8.5.1",
     "knex": "^0.21.17",
+    "knex-paginate": "^1.2.3",
     "moment": "^2.29.1",
     "pg": "^8.5.1"
   }
