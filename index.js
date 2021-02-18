@@ -304,6 +304,15 @@ app.post('/api/orderbuild', (req,res) => {
   .catch(err => res.send(err))
 })
 
+app.get('/api/orders', (req, res) => {
+  knex('orders')
+  .orderBy('last_visited', 'asc')
+  .limit(50)
+  .then((orders) => {
+    res.json(orders)
+  })
+})
+
 app.get('/api/orders/:orderId', (req, res) => {
   let response = {};
   knex('orders')
