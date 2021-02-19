@@ -34,17 +34,64 @@ class Transactions extends Component {
     super(props);
     this.state = {
       orders: [],
-      rowsPerPage: 50,
-      page: 0
+      pagination: {
+        currentPage: 1,
+        lastPage: 0,
+        perPage: 25,
+        total: 0
+      },
+      startDate: moment().startOf('day').format('YYYY-MM-DDTHH:mm:ssZ'),
+      endDate: moment().endOf('day').format('YYYY-MM-DDTHH:mm:ssZ'),
     }
   }
 
-  setRowsPerPage = (event) =>{
-    this.setState({rowsPerPage: event.target.value})
+  //Pagination Functions
+
+  handlePageChange = (event, page) => {
+    let pagination = this.state.pagination
+    pagination.currentPage = page + 1;
+    this.setState({ pagination }, function() {
+      this.getOrders();
+    })
   }
 
-  setPage = (event, value) =>{
-    this.setState({page: value})
+  handleRowsPerPageChange = event => {
+    let pagination = this.state.pagination
+    pagination.perPage = event.target.value
+    pagination.currentPage = 1
+    this.setState({ pagination }, function() {
+      this.getOrders();
+    })
+  }
+
+  //Date Picker Functions
+
+  startDateChange = event => {
+    let startDate = event.startOf('day').format('YYYY-MM-DDTHH:mm:ssZ');
+    if(moment(startDate).isBefore(this.state.endDate)) {
+      this.setState({ startDate }, function(){
+        this.getOrders();
+      });
+    } else {
+      let endDate = event.endOf('day').format('YYYY-MM-DDTHH:mm:ssZ');
+      this.setState({ startDate, endDate }, function(){
+        this.getOrders();
+      });
+    }
+  }
+
+  endDateChange = event => {
+    let endDate = event.endOf('day').format('YYYY-MM-DDTHH:mm:ssZ');
+    if(moment(endDate).isAfter(this.state.startDate)) {
+      this.setState({ endDate }, function(){
+        this.getOrders();
+      });
+    } else {
+      let startDate = event.startOf('day').format('YYYY-MM-DDTHH:mm:ssZ');
+      this.setState({ startDate, endDate }, function(){
+        this.getOrders();
+      });
+    }
   }
 
   componentDidMount() {
@@ -52,11 +99,17 @@ class Transactions extends Component {
   }
 
   getOrders = () => {
+    let dates = {
+      startDate: this.state.startDate,
+      endDate: this.state.endDate,
+    }
+    let pagination = this.state.pagination
     axios
-    .get('/api/orders')
+    .post('/api/orders', { dates, pagination })
     .then( res => {
-      let orders = res.data
-      this.setState({ orders })
+      let orders = res.data.data
+      let pagination = res.data.pagination
+      this.setState({ orders, pagination })
     })
   }
 
@@ -65,12 +118,6 @@ class Transactions extends Component {
     input  /= 100
     return(input.toFixed(2))
   }
-
-                // value={startDate}
-                // onChange={handleDateChange}
-
-                // onClick={handleClickShowPassword}
-                //   onMouseDown={handleMouseDownPassword}
 
   render() {
     let { admin, dashboard, user } = this.props;
@@ -99,8 +146,10 @@ class Transactions extends Component {
           <Grid item xs={2} justify="space-around">
             <KeyboardDatePicker
               id="date-picker-dialog"
-             label={<span style={{opacity: 0.6}}>Start Date</span>}
-             format="MM/DD/yyyy"
+              label={<span style={{opacity: 0.6}}>Start Date</span>}
+              value={this.state.startDate}
+              onChange={this.startDateChange}
+              format="MM/DD/yyyy"
               KeyboardButtonProps={{
                 "aria-label": "change date"
               }}
@@ -109,8 +158,10 @@ class Transactions extends Component {
           <Grid item xs={2} justify="space-around">
             <KeyboardDatePicker
               id="date-picker-dialog"
-             label={<span style={{opacity: 0.6}}>End Date</span>}
-             format="MM/DD/yyyy"
+              label={<span style={{opacity: 0.6}}>End Date</span>}
+              value={this.state.endDate}
+              onChange={this.endDateChange}
+              format="MM/DD/yyyy"
               KeyboardButtonProps={{
                 "aria-label": "change date"
               }}
@@ -160,11 +211,11 @@ class Transactions extends Component {
           <CardActions>
             <TablePagination
               component="div"
-              count={this.state.orders.length}
+              count={this.state.pagination.total}
               onChangePage={this.handlePageChange}
               onChangeRowsPerPage={this.handleRowsPerPageChange}
-              page={this.state.page}
-              rowsPerPage={this.state.rowsPerPage}
+              page={this.state.pagination.currentPage-1}
+              rowsPerPage={this.state.pagination.perPage}
               rowsPerPageOptions={[5, 10, 25, 50, 100]}
             />
           </CardActions>

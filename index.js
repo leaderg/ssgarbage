@@ -307,12 +307,40 @@ app.post('/api/orderbuild', (req,res) => {
   .catch(err => res.send(err))
 })
 
-app.get('/api/orders', (req, res) => {
+app.post('/api/orders', (req, res) => {
+  let { startDate, endDate } = req.body.dates;
+  let { currentPage, perPage } = req.body.pagination;
   knex('orders')
   .select(['orders.id', 'orders.last_visited', 'customers.name', 'orders.total'])
   .leftJoin('customers', 'orders.customer_id', 'customers.id')
+  .where('last_visited', '>=', startDate.toString())
+  .where('last_visited', '<', endDate.toString())
   .orderBy('last_visited', 'asc')
-  .limit(50)
+  .paginate({
+    perPage: perPage,
+    currentPage: currentPage,
+    isLengthAware: true
+  })
+  .then((orders) => {
+    res.json(orders)
+  })
+})
+
+app.post('/api/ordersearch', (req, res) => {
+  let { currentPage, perPage } = req.body.pagination;
+  let searchterm = req.body.searchterm;
+  knex('orders')
+  .select(['orders.id', 'orders.last_visited', 'customers.name', 'orders.total'])
+  .leftJoin('customers', 'orders.customer_id', 'customers.id')
+  .where('orders.id', (Number(searchterm) || null))
+  .orWhere('customers.name', 'ilike', `%${searchterm}%`)
+  //.orWhere('scale_reference', 'like', `%${searchterm}%`)
+  .orderBy('last_visited', 'asc')
+  .paginate({
+    perPage: perPage,
+    currentPage: currentPage,
+    isLengthAware: true
+  })
   .then((orders) => {
     res.json(orders)
   })
