@@ -4,6 +4,7 @@ import moment from 'moment';
 import MomentUtils from "@date-io/moment";
 
 import NavbarMain from '../Components/NavbarMain'
+import TransactionModal from '../Components/TransactionModal'
 
 import {
   TextField,
@@ -34,6 +35,7 @@ class Transactions extends Component {
     super(props);
     this.state = {
       orders: [],
+      searchterm: "",
       pagination: {
         currentPage: 1,
         lastPage: 0,
@@ -94,9 +96,24 @@ class Transactions extends Component {
     }
   }
 
-  componentDidMount() {
-    this.getOrders();
+  //Searchbar Function
+
+  searchbarInput = event => {
+    let searchterm = event.target.value;
+    this.setState({ searchterm })
   }
+
+  searchEnter = event => {
+    if(event.key === 'Enter'){
+      this.searchOrders();
+    }
+  }
+
+  searchTrigger = () => {
+    this.searchOrders();
+  }
+
+  //API Calls
 
   getOrders = () => {
     let dates = {
@@ -113,10 +130,28 @@ class Transactions extends Component {
     })
   }
 
+  searchOrders = () => {
+    let searchterm = this.state.searchterm
+    let pagination = this.state.pagination
+    axios
+    .post('/api/ordersearch', { searchterm, pagination })
+    .then( res => {
+      let orders = res.data.data
+      let pagination = res.data.pagination
+      this.setState({ orders, pagination })
+    })
+  }
+
+  //Helper Function
+
   toDollars = (input) => {
     input = Number(input);
     input  /= 100
     return(input.toFixed(2))
+  }
+
+  componentDidMount() {
+    this.getOrders();
   }
 
   render() {
@@ -126,10 +161,13 @@ class Transactions extends Component {
       <div className="App">
       <NavbarMain admin={admin} dashboard={dashboard}/>
         <h2>Transactions</h2>
+        <TransactionModal/>
         <Box m={2}>
         <Grid container spacing={2} >
           <Grid item xs={8}>
             <TextField
+              onChange={(e) => this.searchbarInput(e)}
+              onKeyPress={(e) => this.searchEnter(e)}
               fullWidth
               id="outlined-basic"
               label="Search"
@@ -137,7 +175,7 @@ class Transactions extends Component {
               InputProps={{
                 endAdornment: <InputAdornment position="end">
                 <IconButton>
-                  <Search />
+                  <Search onClick={this.searchTrigger}/>
                 </IconButton>
               </InputAdornment>,
               }}

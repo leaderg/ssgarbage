@@ -337,7 +337,7 @@ app.post('/api/ordersearch', (req, res) => {
   //.orWhere('scale_reference', 'like', `%${searchterm}%`)
   .orderBy('last_visited', 'asc')
   .paginate({
-    perPage: perPage,
+    perPage: 200,
     currentPage: currentPage,
     isLengthAware: true
   })

@@ -144,8 +144,8 @@ class PaymentsModal extends Component {
     this.setState({
       receiptPage: true,
       change: change,
-      orderNumber: orderInfo[0].id,
-      date: orderInfo[0].last_visited
+      orderNumber: orderInfo.id,
+      date: orderInfo.last_visited
     })
   }
 
