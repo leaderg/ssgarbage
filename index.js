@@ -269,6 +269,7 @@ app.post('/api/orderbuild', (req,res) => {
     customer_id: order.customer_id,
     discount: order.discount,
     subtotal: order.subtotal,
+    scale_reference: order.scale_reference,
     tax: order.tax,
     total: order.total,
     last_visited: order.lastVisited
@@ -311,7 +312,7 @@ app.post('/api/orders', (req, res) => {
   let { startDate, endDate } = req.body.dates;
   let { currentPage, perPage } = req.body.pagination;
   knex('orders')
-  .select(['orders.id', 'orders.last_visited', 'customers.name', 'orders.total'])
+  .select(['orders.id', 'orders.last_visited', 'customers.name', 'orders.total', 'orders.scale_reference'])
   .leftJoin('customers', 'orders.customer_id', 'customers.id')
   .where('last_visited', '>=', startDate.toString())
   .where('last_visited', '<', endDate.toString())
@@ -330,11 +331,11 @@ app.post('/api/ordersearch', (req, res) => {
   let { currentPage, perPage } = req.body.pagination;
   let searchterm = req.body.searchterm;
   knex('orders')
-  .select(['orders.id', 'orders.last_visited', 'customers.name', 'orders.total'])
+  .select(['orders.id', 'orders.last_visited', 'customers.name', 'orders.total', 'orders.scale_reference'])
   .leftJoin('customers', 'orders.customer_id', 'customers.id')
   .where('orders.id', (Number(searchterm) || null))
   .orWhere('customers.name', 'ilike', `%${searchterm}%`)
-  //.orWhere('scale_reference', 'like', `%${searchterm}%`)
+  .orWhere('scale_reference', 'ilike', `%${searchterm}%`)
   .orderBy('last_visited', 'asc')
   .paginate({
     perPage: 200,

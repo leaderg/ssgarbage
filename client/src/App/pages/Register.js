@@ -22,7 +22,8 @@ class Register extends Component {
         "subtotal": 0,
         'discount': 0,
         "tax": 0,
-        "total": 0
+        "total": 0,
+        "scale_reference": ""
       },
       discountValue: 0,
       discountActive: false,
@@ -318,6 +319,12 @@ class Register extends Component {
     return(input);
   }
 
+  scaleReferenceChange = event => {
+    let order = {...this.state.order};
+    order.scale_reference = event.target.value;
+    this.setState({ order });
+  }
+
   addPaymentMethod(type, value) {
     let payments = [...this.state.payments]
     let payment = {
@@ -392,6 +399,10 @@ class Register extends Component {
               <td className="total-amount">{this.state.employee}</td>
             </tr>
             <CustomerModal setCustomer={this.setCustomer} key={this.state.customerResetID}/>
+            <tr>
+              <td>Scale Reference</td>
+              <td className="total-amount"><input type="text" onChange={this.scaleReferenceChange} /></td>
+            </tr>
           </table>
 
           <table className="cr-order-table-products">

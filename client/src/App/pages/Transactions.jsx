@@ -234,7 +234,7 @@ class Transactions extends Component {
                 return (
                   <TableRow hover key={index}>
                     <TableCell>{order.id}</TableCell>
-                    <TableCell>---Not Implimented---</TableCell>
+                    <TableCell>{order.scale_reference}</TableCell>
                     <TableCell>{moment(order.last_visited).format('MM/DD/YYYY - hh:mm a')}</TableCell>
                     <TableCell>{order.name}</TableCell>
                     <TableCell>${this.toDollars(order.total)}</TableCell>
