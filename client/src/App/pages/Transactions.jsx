@@ -61,6 +61,7 @@ class Transactions extends Component {
     super(props);
     this.state = {
       orders: [],
+      categories: [],
       searchterm: "",
       pagination: {
         currentPage: 1,
@@ -92,6 +93,25 @@ class Transactions extends Component {
       addLineItem: false,
       editPayment: false,
       addPayment: false,
+
+      scaleRefInput: "",
+
+      editPaymentIndex: 0,
+      editPaymentInput: [],
+
+      editAddPayment: {
+        amount: "",
+        payment_method: "",
+        order_id: null
+      },
+
+      editLineItemIndex: 0,
+      editLineItemInput: [],
+
+      selectedCategory: {},
+      productList: [],
+      selectedProduct: {},
+      selectQuantity: 0 // Then make the line item and push it on save
 
     }
   }
@@ -195,7 +215,33 @@ class Transactions extends Component {
     axios
     .get(`/api/orders/${order.id}`)
     .then( res => {
-      this.setState({ selectedOrder: res.data, editSelectedOrder: res.data, transactionModalToggle: true}, this.handleOpen())
+      this.setState({
+        selectedOrder: res.data,
+        editSelectedOrder: res.data,
+        transactionModalToggle: true
+      },
+        this.handleOpen()
+      )
+    })
+  }
+
+  getCategories() {
+    axios
+    .get(`/api/categories`)
+    .then(res => {
+      const categories = res.data;
+      this.setState({ categories });
+    })
+  }
+
+  getProducts() {
+    axios
+    .get(`/api/products/${this.state.selectedCategory.id}`)
+    .then(res => {
+      const productList = res.data;
+      this.setState({
+        productList
+      });
     })
   }
 
@@ -205,6 +251,11 @@ class Transactions extends Component {
     input = Number(input);
     input  /= 100
     return(input.toFixed(2))
+  }
+
+  toCents(input) {
+    input *= 100
+    return(input);
   }
 
 
@@ -247,6 +298,15 @@ class Transactions extends Component {
     this.setState({editScaleRef: true}))
   }
 
+  editLineItemSelected = (index) => {
+    this.setState({
+      editLineItemInput: this.state.editSelectedOrder.lineItems[index],
+      editLineItemIndex: index
+    },
+      this.editLineItemToggle()
+    )
+  }
+
   editLineItemToggle = () => {
     this.state.editLineItem ? (
     this.setState({editLineItem: false})
@@ -261,6 +321,14 @@ class Transactions extends Component {
     this.setState({addLineItem: true}))
   }
 
+  editPaymentSelected = (index) => {
+    this.setState({
+      editPaymentInput: this.state.editSelectedOrder.payments[index],
+      editPaymentIndex: index
+    },
+      this.editPaymentToggle()
+    )
+  }
   editPaymentToggle = () => {
     this.state.editPayment ? (
     this.setState({editPayment: false})
@@ -275,8 +343,131 @@ class Transactions extends Component {
     this.setState({addPayment: true}))
   }
 
+  //Edit Scale Ref Function
+  editScaleRefInput = event => {
+    let scaleRefInput = event.target.value;
+    this.setState({ scaleRefInput })
+  }
+
+  commitScaleRefEdit = () => {
+    let editSelectedOrder = this.state.editSelectedOrder;
+    editSelectedOrder.order[0].scale_reference = this.state.scaleRefInput
+    this.setState({
+      editSelectedOrder,
+      editScaleRef: false
+    })
+  }
+
+  //Edit Line Item Method
+  editLineItemInput = event => {
+    let quantity = event.target.value
+    let editLineItemInput = this.state.editLineItemInput
+    editLineItemInput.quantity = quantity
+    this.setState({ editLineItemInput })
+  }
+
+  //Add Line Item Methods
+
+  chooseCategory = event => {
+    this.setState({ selectedCategory: event.target.value}, () => {
+      this.getProducts()
+    })
+  }
+
+  chooseProduct = event => {
+    this.setState({ selectedProduct: event.target.value})
+  }
+
+  addLineItemQuantity = event => {
+    let selectQuantity = event.target.value
+    this.setState({ selectQuantity })
+  }
+
+  addLineItemSubmit = () => {
+    let newLineItem = {};
+    newLineItem.order_id = this.state.editSelectedOrder.order[0].id
+    newLineItem.product_id = this.state.selectedProduct.id
+    newLineItem.tax_percent = this.state.selectedProduct.tax_percent
+    newLineItem.taxed = this.state.selectedProduct.taxed
+    newLineItem.name = this.state.selectedProduct.name
+    newLineItem.price = this.state.selectedProduct.price
+    newLineItem.quantity = Number(this.state.selectQuantity)
+    let editSelectedOrder = this.state.editSelectedOrder
+    editSelectedOrder.lineItems.push(newLineItem)
+    this.setState({ editSelectedOrder }, this.addLineItemToggle)
+  }
+
+  //Edit Payment Method
+  editPaymentTypeInput = event => {
+    let type = event.target.value
+    let editPaymentInput = this.state.editPaymentInput
+    editPaymentInput.payment_method = type
+    this.setState({ editPaymentInput })
+  }
+
+  editPaymentAmountInput = event => {
+    let amount = this.toCents(event.target.value)
+    let editPaymentInput = this.state.editPaymentInput
+    editPaymentInput.amount = amount
+    this.setState({ editPaymentInput })
+  }
+
+  //Add Payment Method
+  addNewPaymentType = event => {
+    let editAddPayment = this.state.editAddPayment
+    editAddPayment.payment_method = event.target.value
+    this.setState({ editAddPayment})
+  }
+
+  addNewPaymentAmount = event => {
+    let editAddPayment = this.state.editAddPayment
+    editAddPayment.amount = this.toCents(event.target.value)
+    this.setState({ editAddPayment})
+  }
+
+  addNewPaymentConfirm = () => {
+    let editAddPayment = this.state.editAddPayment
+    editAddPayment.order_id = this.state.editSelectedOrder.order[0].id
+    let editSelectedOrder = this.state.editSelectedOrder
+    editSelectedOrder.payments.push(editAddPayment)
+    this.setState({ editSelectedOrder})
+  }
+
+  //Order Helper Functions//////////////////
+  getSubtotal = () => {
+    let output = 0;
+    this.state.editSelectedOrder.lineItems.forEach(lineItem => {
+      output += (lineItem.price * lineItem.quantity)
+    })
+    return this.toDollars(output)
+  }
+
+  getTax = () => {
+    let output = 0;
+    this.state.editSelectedOrder.lineItems.forEach(lineItem => {
+      output += (lineItem.price * lineItem.quantity * (lineItem.tax_percent / 100))
+    })
+    return this.toDollars(output)
+  }
+
+  getTotal = () => {
+    let subtotal = this.getSubtotal();
+    let tax = this.getTax();
+    let total = this.toCents(subtotal) + this.toCents(tax);
+    return this.toDollars(total);
+  }
+
+  getPaid = () => {
+    let output = 0;
+    this.state.editSelectedOrder.payments.forEach(payment => {
+      output += payment.amount
+    })
+    return this.toDollars(output);
+  }
+
   componentDidMount() {
     this.getOrders();
+    this.getCategories();
   }
 
   render() {
@@ -286,6 +477,7 @@ class Transactions extends Component {
     const sCustomer = this.state.selectedOrder.customer[0];
     const sPayments = this.state.selectedOrder.payments
     const editSelectedOrder = this.state.editSelectedOrder
+    let paymentMethodList = ['Cash', 'Debit', 'Credit']
 
     const classes = {
       button: {
@@ -461,7 +653,7 @@ class Transactions extends Component {
                         <TableCell align="right">${this.toDollars(lineItem.price)}</TableCell>
                         <TableCell align="right">${this.toDollars(lineItem.price * lineItem.quantity)}</TableCell>
                         <TableCell>
-                          <IconButton aria-label="Quotes" onClick={this.editLineItemToggle}>
+                          <IconButton aria-label="Quotes" onClick={() => this.editLineItemSelected(index)}>
                             <Edit />
                           </IconButton>
                         </TableCell>
@@ -488,7 +680,7 @@ class Transactions extends Component {
                           <TableCell>{payment.payment_method}</TableCell>
                           <TableCell>${this.toDollars(payment.amount)}</TableCell>
                           <TableCell>
-                            <IconButton aria-label="Quotes" onClick={this.editPaymentToggle}>
+                            <IconButton aria-label="Quotes" onClick={() => this.editPaymentSelected(index)}>
                               <Edit />
                             </IconButton>
                           </TableCell>
@@ -510,23 +702,23 @@ class Transactions extends Component {
                       <TableRow>
                         <TableCell rowSpan={6} />
                         <TableCell colSpan={2}>Subtotal</TableCell>
-                        <TableCell align="right">3.14</TableCell>
+                        <TableCell align="right">${this.getSubtotal()}</TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell colSpan={2}>Discount</TableCell>
-                        <TableCell align="right">$1</TableCell>
+                        <TableCell align="right">$</TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell colSpan={2}>Tax</TableCell>
-                        <TableCell align="right">$4</TableCell>
+                        <TableCell align="right">${this.getTax()}</TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell colSpan={2}>Total</TableCell>
-                        <TableCell align="right">$6.14</TableCell>
+                        <TableCell align="right">${this.getTotal()}</TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell colSpan={2}>Paid</TableCell>
-                        <TableCell align="right">$6.14</TableCell>
+                        <TableCell align="right">${this.getPaid()}</TableCell>
                       </TableRow>
                     </TableBody>
                   </Table>
@@ -576,13 +768,17 @@ class Transactions extends Component {
       >
         <DialogTitle>Edit Scale Reference</DialogTitle>
         <DialogContent>
-          <TextField margin="dense" fullWidth placeholder={editSelectedOrder.order[0] ? editSelectedOrder.order[0].scale_reference : null}/>
+          <TextField
+            margin="dense"
+            fullWidth placeholder={editSelectedOrder.order[0] ? editSelectedOrder.order[0].scale_reference : null}
+            onChange={(e) => this.editScaleRefInput(e)}
+          />
         </DialogContent>
         <DialogActions>
-          <Button variant="contained" color="secondary" className={classes.button}>
+          <Button variant="contained" color="secondary" className={classes.button} onClick={this.editScaleRefToggle}>
             Cancel
           </Button>
-          <Button variant="contained" color="primary" className={classes.button}>
+          <Button variant="contained" color="primary" className={classes.button} onClick={this.commitScaleRefEdit}>
             Save
           </Button>
         </DialogActions>
@@ -597,9 +793,10 @@ class Transactions extends Component {
       >
         <DialogTitle>Edit Line Item</DialogTitle>
         <DialogContent>
-          ProductName
+          {this.state.editLineItemInput.name}
           <div><TextField
-          label="New Quantity"
+          label={this.state.editLineItemInput.quantity}
+          onChange={(e) => this.editLineItemInput(e)}
           defaultValue="Normal"
           variant="outlined"
           type='number'
@@ -608,18 +805,13 @@ class Transactions extends Component {
           <div style={{paddingTop: 10}}><Button variant="contained" color='secondary'>Delete</Button></div>
         </DialogContent>
         <DialogActions>
-          <Button variant="contained" color="secondary" className={classes.button}>
-            Cancel
-          </Button>
-          <Button variant="contained" color="primary" className={classes.button}>
-            Save
+          <Button variant="contained" color="primary" className={classes.button} onClick={this.editLineItemToggle}>
+            Okay
           </Button>
         </DialogActions>
       </Dialog>
       )
 
-
-    let categoriroos = ['video games', 'dance equipment', 'train sets']
     let productooos = ['product1', 'product2']
     let addLineItem = (
       <Dialog
@@ -634,10 +826,11 @@ class Transactions extends Component {
             select
             label="Category"
             helperText="Please select your category"
+            onChange={(e) => this.chooseCategory(e)}
           >
-            {categoriroos.map((option) => (
-              <MenuItem >
-                {option}
+            {this.state.categories.map((option) => (
+              <MenuItem value={option}>
+                {option.name}
               </MenuItem>
             ))}
           </TextField>
@@ -648,10 +841,11 @@ class Transactions extends Component {
             select
             label="Product"
             helperText="Please select your category"
+            onChange={(e) => this.chooseProduct(e)}
           >
-            {productooos.map((option) => (
-              <MenuItem >
-                {option}
+            {this.state.productList.map((option) => (
+              <MenuItem value={option}>
+                {option.name}
               </MenuItem>
             ))}
           </TextField>
@@ -663,34 +857,44 @@ class Transactions extends Component {
             variant="outlined"
             type='number'
             placeholder="0"
+            onChange={(e) => this.addLineItemQuantity(e)}
           />
           </div>
         </DialogContent>
         <DialogActions>
-          <Button variant="contained" color="secondary" className={classes.button}>
+          <Button variant="contained" color="secondary" className={classes.button}
+          onClick={() => this.setState({
+             selectedCategory: {},
+              productList: [],
+              selectedProduct: {},
+              selectQuantity: 0
+            },
+              () => this.addLineItemToggle()
+            )
+          }>
             Cancel
           </Button>
-          <Button variant="contained" color="primary" className={classes.button}>
+          <Button variant="contained" color="primary" className={classes.button} onClick={this.addLineItemSubmit}>
             Add
           </Button>
         </DialogActions>
       </Dialog>
       )
 
-    let paymentMethodList = ['Cash', 'Debit', 'Credit', 'Charge']
     let editPayment = (
       <Dialog
         open={this.state.editPayment}
         onClose={this.editPaymentToggle}
       >
-        <DialogTitle>Add Payment</DialogTitle>
+        <DialogTitle>Edit Payment</DialogTitle>
         <DialogContent>
           <div style={{margin: 5}}>
           <TextField
             id="standard-select-currency"
             select
-            label="Payment Method"
+            label={this.state.editPaymentInput.payment_method}
             helperText="Please select your payment method"
+            onChange={(e) => this.editPaymentTypeInput(e)}
           >
             {paymentMethodList.map((option, i) => (
               <MenuItem key={i} value={option}>
@@ -701,7 +905,8 @@ class Transactions extends Component {
           </div>
           <div style={{marginBottom: 5}}>
           <TextField
-            label="Amount"
+            label={this.toDollars(this.state.editPaymentInput.amount)}
+            onChange={(e) => this.editPaymentAmountInput(e)}
             defaultValue="Normal"
             variant="outlined"
             type='number'
@@ -710,11 +915,8 @@ class Transactions extends Component {
           </div>
         </DialogContent>
         <DialogActions>
-          <Button variant="contained" color="secondary" className={classes.button}>
-            Cancel
-          </Button>
-          <Button variant="contained" color="primary" className={classes.button}>
-            Save
+          <Button variant="contained" color="primary" className={classes.button} onClick={this.editPaymentToggle}>
+            Okay
           </Button>
         </DialogActions>
       </Dialog>
@@ -733,6 +935,7 @@ class Transactions extends Component {
             select
             label="Payment Method"
             helperText="Please select your payment method"
+            onChange={(e) => this.addNewPaymentType(e)}
           >
             {paymentMethodList.map((option, i) => (
               <MenuItem key={i} value={option}>
@@ -748,14 +951,15 @@ class Transactions extends Component {
             variant="outlined"
             type='number'
             placeholder="0"
+            onChange={(e) => this.addNewPaymentAmount(e)}
           />
           </div>
         </DialogContent>
         <DialogActions>
-          <Button variant="contained" color="secondary" className={classes.button}>
+          <Button variant="contained" color="secondary" className={classes.button} onClick={this.addPaymentToggle}>
             Cancel
           </Button>
-          <Button variant="contained" color="primary" className={classes.button}>
+          <Button variant="contained" color="primary" className={classes.button} onClick={this.addNewPaymentConfirm}>
             Add
           </Button>
         </DialogActions>
