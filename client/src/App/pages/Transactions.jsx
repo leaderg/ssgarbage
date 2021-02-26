@@ -111,7 +111,7 @@ class Transactions extends Component {
       selectedCategory: {},
       productList: [],
       selectedProduct: {},
-      selectQuantity: 0 // Then make the line item and push it on save
+      selectQuantity: 0
 
     }
   }
@@ -329,6 +329,7 @@ class Transactions extends Component {
       this.editPaymentToggle()
     )
   }
+
   editPaymentToggle = () => {
     this.state.editPayment ? (
     this.setState({editPayment: false})
