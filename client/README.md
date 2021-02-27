@@ -95,3 +95,14 @@ Create a route:
 
 results.data - will hold artist data
 results.pagination - will hold pagination object (total for count)
+
+## Knex Batch Update
+This function lets you batch update. You can call it and use a then after it to do what you want.
+
+`batchPaymentUpdate = async payments => {
+  for(let i = 0; i < payments.length; i++) {
+    await knex('payments')
+    .where({ id: payments[i].id})
+    .update(payments[i])
+  }
+}`

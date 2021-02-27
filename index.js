@@ -308,6 +308,67 @@ app.post('/api/orderbuild', (req,res) => {
   .catch(err => res.send(err))
 })
 
+app.post('/api/editorder', (req, res) => {
+
+  let data = req.body.data
+  let order = data.order[0]
+
+  let payments = data.payments
+  let insertPayments = []
+  let updatePayments = []
+
+  payments.forEach( payment => {
+    payment.id ? updatePayments.push(payment) : insertPayments.push(payment)
+  })
+
+  let lineItems = data.lineItems
+  let insertLineItems = []
+  let updateLineItems = []
+
+  lineItems.forEach( lineItem => {
+    delete lineItem.tax_percent
+    delete lineItem.taxed
+    delete lineItem.name
+    delete lineItem.price
+    lineItem.id ? updateLineItems.push(lineItem) : insertLineItems.push(lineItem)
+  })
+
+  knex('orders')
+  .where({id: order.id})
+  .update(order)
+    .then( output => {
+  batchPaymentUpdate(updatePayments)
+    .then( output => {
+  batchLineItemUpdate(updateLineItems)
+    .then( output => {
+  knex('payments')
+  .insert( insertPayments)
+    .then( output => {
+  knex('line_items')
+  .insert(insertLineItems)
+    .then(res.sendStatus(200))
+        })
+      })
+    })
+  })
+})
+
+batchPaymentUpdate = async payments => {
+  for(let i = 0; i < payments.length; i++) {
+    await knex('payments')
+    .where({ id: payments[i].id})
+    .update(payments[i])
+  }
+}
+
+batchLineItemUpdate = async lineItems => {
+  for(let i = 0; i < lineItems.length; i++) {
+    await knex('line_items')
+    .where({ id: lineItems[i].id })
+    .update(lineItems[0])
+  }
+}
+
 app.post('/api/orders', (req, res) => {
   let { startDate, endDate } = req.body.dates;
   let { currentPage, perPage } = req.body.pagination;
@@ -368,7 +429,7 @@ app.get('/api/orders/:orderId', (req, res) => {
           response.payments = payments;
           knex('line_items')
           .where({order_id: order[0].id})
-          .select(['line_items.quantity','products.name', 'products.price', 'products.taxed', 'products.tax_percent'])
+          .select(['line_items.id','line_items.quantity','products.name', 'products.price', 'products.taxed', 'products.tax_percent'])
           .join('products', 'line_items.product_id', '=', 'products.id')
           .then((line_items) => {
             response.lineItems = line_items;

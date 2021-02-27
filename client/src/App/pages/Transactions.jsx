@@ -434,6 +434,20 @@ class Transactions extends Component {
     this.setState({ editSelectedOrder})
   }
 
+  //Submit Edited Order
+  submitEditedOrder = () => {
+    let data = this.state.editSelectedOrder;
+    data.order[0].subtotal = this.toCents(this.getSubtotal())
+    data.order[0].tax = this.toCents(this.getTax())
+    data.order[0].total = this.toCents(this.getTotal())
+
+    axios
+    .post(`/api/editorder`, { data })
+    .then( res => {
+      alert('sent')
+    })
+  }
+
   //Order Helper Functions//////////////////
   getSubtotal = () => {
     let output = 0;
@@ -733,7 +747,7 @@ class Transactions extends Component {
           <Button variant="contained" color="secondary" className={classes.button}>
             Cancel
           </Button>
-          <Button variant="contained" color="primary" className={classes.button}>
+          <Button variant="contained" color="primary" className={classes.button} onClick={this.submitEditedOrder}>
             Save
           </Button>
         </DialogActions>
@@ -813,7 +827,6 @@ class Transactions extends Component {
       </Dialog>
       )
 
-    let productooos = ['product1', 'product2']
     let addLineItem = (
       <Dialog
         open={this.state.addLineItem}
