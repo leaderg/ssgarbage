@@ -495,6 +495,19 @@ app.post('/api/rangereport', (req,res) => {
   .catch(err => {res.send(err)})
 })
 
+app.get('/api/discountTriggers', ( req, res ) => {
+  knex('discount_triggers')
+  .where('end_date', '>', moment().startOf('day'))
+  .leftJoin('products', 'discount_triggers.product_id', '=', 'products.id')
+  .then(result => res.json(result))
+})
+
+app.post('/api/discountTriggers', ( req, res ) => {
+  knex('discount_triggers')
+  .insert(req.body.newDiscountTrigger)
+  .then(x => res.sendStatus(200))
+})
+
 app.get('/api/data', (req, res) => {
  res.send('Hi');
 });

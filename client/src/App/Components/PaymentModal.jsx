@@ -72,7 +72,7 @@ class ComponentToPrint extends React.Component {
 
         <div className="receipt-footer">
           Thank you for choosing Salt Spring Garbage!<br/>
-          GST# Get Number
+          GST# 89204 3548 RT001
         </div>
       </div>
     );

@@ -6,7 +6,6 @@ import moment from 'moment';
 import CustomerModal from '../Components/CustomerModal'
 import PaymentModal from '../Components/PaymentModal'
 import NavbarMain from '../Components/NavbarMain'
-import Discounts from '../Components/Discounts'
 
 class Register extends Component {
 
@@ -29,7 +28,8 @@ class Register extends Component {
       discountActive: false,
       discountIsPercent: false,
       lineItems: [],
-      orderProducts: []
+      orderProducts: [],
+      discountTriggers: []
     }
   }
 
@@ -39,6 +39,15 @@ class Register extends Component {
     .then(res => {
       const categories = res.data;
       this.setState({ categories });
+    })
+  }
+
+  getDiscountTriggers() {
+    axios
+    .get('/api/discountTriggers')
+    .then(res => {
+      const discountTriggers = res.data;
+      this.setState({ discountTriggers })
     })
   }
 
@@ -214,6 +223,7 @@ class Register extends Component {
   componentDidMount() {
     this.getCategories();
     this.getEmployee(this.props.user);
+    this.getDiscountTriggers();
   }
 
   addLineItem(product) {
@@ -249,6 +259,12 @@ class Register extends Component {
 
       this.setState({ lineItems, order });
     }
+  }
+
+  getProductDiscount(productId) {
+    return this.state.discountTriggers.filter( e => {
+      return e.product_id === productId
+    })
   }
 
   //Quantity Text Field
@@ -360,36 +376,31 @@ class Register extends Component {
       <h1>Cash Register</h1>
       <div className="cr-container">
         <div className="cr-product-section">
-        <div>
+          <div>
           {categories.length ? (
             <div className="cr-product-category-selection">
-
-                {categories.map((category) => {
-                  return(
-                    <div className="cr-category-card noselect" onClick={() => this.selectCategory(category.id)}>{category.name}</div>
-                  );}
-                )}
-              <div className="cr-category-card noselect" onClick={() => this.setState({selectedCategoryId: 'discount'})}>Discount</div>
+              {categories.map((category) => { return(
+              <div className="cr-category-card noselect" onClick={() => this.selectCategory(category.id)}>
+                {category.name}
+              </div>
+                )})}
             </div>
           ) : (
             <div>
               <h3>No Categories Found</h3>
             </div>
-          )
-          }
+          )}
         </div>
-          { selectedCategoryId === 'discount' ? (
-              <Discounts setDiscount={this.setDiscount} removeDiscount={this.removeDiscount}/>
-              ) : (
-                    selectedCategoryId === null ? ( <div className="cr-select-category-message">No Category Selected</div> )
-                    : (products.length ? (
-                          <div className="cr-products-container">
-                          {products.map((product) => {
-                            return(
-                              <div className="cr-product-card noselect" onClick={() => this.addLineItem(product)}>{product.name}</div>
-                            )
-                          })}
-                          </div>) : (<h3>No Products Found</h3>)))}
+          {selectedCategoryId === null ? (
+            <div className="cr-select-category-message">No Category Selected</div> )
+          : (products.length ? (
+                <div className="cr-products-container">
+                {products.map((product) => {
+                  return(
+                    <div className="cr-product-card noselect" onClick={() => this.addLineItem(product)}>{product.name}</div>
+                  )
+                })}
+                </div>) : (<h3>No Products Found</h3>))}
         </div>
         <div className="cr-order-section">
           <h1>Order</h1>
