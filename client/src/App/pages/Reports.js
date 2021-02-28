@@ -339,12 +339,12 @@ class Reports extends Component {
             <View style={styles.section}>
               <View style={styles.label}>
                 {categoryTotals.map((category) => {
-                return(<Text style={styles.tallyLine}>{category.name}</Text>)
+                return (category.total > 0 ? (<Text style={styles.tallyLine}>{category.name}</Text>) : null)
                 })}
               </View>
               <View style={styles.value}>
                 {categoryTotals.map((category) => {
-                return(<Text style={styles.tallyLine}>${category.total}</Text>)
+                return( category.total > 0 ? (<Text style={styles.tallyLine}>${category.total}</Text>) : null)
                 })}
               </View>
             </View>
