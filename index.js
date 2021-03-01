@@ -412,6 +412,15 @@ app.post('/api/ordersearch', (req, res) => {
   })
 })
 
+app.post('/api/customersearch', (req, res) => {
+  input = req.body.searchterm;
+  knex('customers')
+  .where('customers.name', 'ilike', `%${input}%`)
+  .then(customers => {
+    res.json(customers)
+  })
+})
+
 app.get('/api/orders/:orderId', (req, res) => {
   let response = {};
   knex('orders')

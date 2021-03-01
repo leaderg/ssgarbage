@@ -13,6 +13,7 @@ import {
   CardHeader,
   CardActions,
   CardContent,
+  Divider,
   Dialog,
   DialogContent,
   DialogTitle,
@@ -24,7 +25,6 @@ import {
   TablePagination,
   InputAdornment,
   IconButton,
-  Divider,
   ListItem,
   MenuItem,
   ListItemText,
@@ -112,7 +112,10 @@ class Transactions extends Component {
       selectedCategory: {},
       productList: [],
       selectedProduct: {},
-      selectQuantity: 0
+      selectQuantity: 0,
+
+      customerList: [],
+      selectedCustomer: {}
 
     }
   }
@@ -212,6 +215,14 @@ class Transactions extends Component {
     })
   }
 
+  getCustomers = () => {
+    axios
+      .get(`/api/customers`)
+      .then(res => {
+        this.setState({ customerList: res.data });
+      })
+  }
+
   selectOrder = (order) => {
     axios
     .get(`/api/orders/${order.id}`)
@@ -244,6 +255,13 @@ class Transactions extends Component {
         productList
       });
     })
+  }
+
+  customerSearch = (event) => {
+    let searchterm = event.target.value
+    axios
+    .post('/api/customersearch', { searchterm })
+    .then(res => this.setState({ customerList: res.data }))
   }
 
   //Helper Function
@@ -343,6 +361,14 @@ class Transactions extends Component {
     this.setState({addPayment: false})
       ) : (
     this.setState({addPayment: true}))
+  }
+
+  //Edit Customer
+  selectNewCustomer = (customerObj) => {
+    let editSelectedOrder = this.state.editSelectedOrder
+    editSelectedOrder.customer = customerObj
+    editSelectedOrder.order[0].customer_id = customerObj.id
+    this.setState({ editSelectedOrder }, () => this.editCustomerToggle())
   }
 
   //Edit Scale Ref Function
@@ -518,6 +544,7 @@ class Transactions extends Component {
   componentDidMount() {
     this.getOrders();
     this.getCategories();
+    this.getCustomers();
   }
 
   render() {
@@ -576,7 +603,7 @@ class Transactions extends Component {
               <Grid container spacing={2}>
                 <Grid item xs={6}>
                 <ListItem>
-                    <ListItemText primary={"Customer"} secondary={sCustomer ? sCustomer.name : ""}/>
+                    <ListItemText primary={"Customer"} secondary={sCustomer ? sCustomer.name : "---"}/>
                   </ListItem>
                 </Grid>
                 <Grid item xs={6}>
@@ -669,7 +696,7 @@ class Transactions extends Component {
                     <TableBody>
                     <h3>Customer</h3>
                     <TableRow>
-                      <TableCell colSpan={4}>{editSelectedOrder.customer[0] ? editSelectedOrder.customer[0].name : "No Customer Selected"}</TableCell>
+                      <TableCell colSpan={4}>{editSelectedOrder.customer.name ? editSelectedOrder.customer.name : "No Customer Selected"}</TableCell>
                       <TableCell>
                         <IconButton aria-label="Quotes" onClick={this.editCustomerToggle}>
                           <Edit />
@@ -808,14 +835,19 @@ class Transactions extends Component {
         <DialogTitle>Edit Customer</DialogTitle>
         <DialogContent>
           Please Choose A Customer
-          <TextField margin="dense" fullWidth placeholder={editSelectedOrder.customer[0] ? editSelectedOrder.customer[0].name : 'No Customer Selected'}/>
+          <TextField
+          margin="dense"
+          fullWidth
+          onChange={(e) => this.customerSearch(e)}
+          placeholder={editSelectedOrder.customer[0] ? editSelectedOrder.customer[0].name : 'No Customer Selected'}
+          />
+            {this.state.customerList.map(customer => {
+              return(<div><Divider/><ListItem onClick={() => this.selectNewCustomer(customer)}>{customer.name}</ListItem></div>)
+            })}
         </DialogContent>
         <DialogActions>
-          <Button variant="contained" color="secondary" className={classes.button}>
+          <Button variant="contained" color="secondary" onClick={this.editCustomerToggle}>
             Cancel
-          </Button>
-          <Button variant="contained" color="primary" className={classes.button}>
-            Save
           </Button>
         </DialogActions>
       </Dialog>
