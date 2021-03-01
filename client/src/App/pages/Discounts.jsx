@@ -89,9 +89,10 @@ function Discounts() {
 
   const submitDiscountTrigger = () => {
     let newDiscountTrigger = {
-      product_id: selectedProduct,
+      product_id: selectedProduct.id,
       is_percent: type,
       amount: amount,
+      value: valueHandler(),
       start_date: startDate,
       end_date: endDate
     };
@@ -119,6 +120,25 @@ function Discounts() {
       updateStartDate(date)
       updateEndDate(date2)
     }
+  }
+
+  const toDollars = (input) => {
+    input = Number(input);
+    input  /= 100
+    return(input.toFixed(2))
+  }
+
+  const toCents = (input) => {
+    input *= 100
+    return(input);
+  }
+
+  const valueHandler = () => {
+    return type ? (
+       selectedProduct.price * amount / 100
+      ) : (
+       toCents(amount)
+    )
   }
 
   return (
@@ -149,6 +169,9 @@ function Discounts() {
                     Amount
                   </TableCell>
                   <TableCell>
+                    Value
+                  </TableCell>
+                  <TableCell>
                     Start Date
                   </TableCell>
                   <TableCell>
@@ -162,6 +185,7 @@ function Discounts() {
                     <TableCell>{trigger.name}</TableCell>
                     <TableCell>{trigger.is_percent ? "Percentage" : "Flat Rate"}</TableCell>
                     <TableCell>{trigger.is_percent ? `${trigger.amount}%` : `$${trigger.amount}`}</TableCell>
+                    <TableCell>${toDollars(trigger.value)}</TableCell>
                     <TableCell>{moment(trigger.start_date).format('MM/DD/YYYY - hh:mm a')}</TableCell>
                     <TableCell>{moment(trigger.end_date).format('MM/DD/YYYY - hh:mm a')}</TableCell>
                   </TableRow>
@@ -206,7 +230,7 @@ function Discounts() {
             onChange={(e) => chooseProduct(e)}
           >
             {products.map((option) => (
-              <MenuItem value={option.id}>
+              <MenuItem value={option}>
                 {option.name}
               </MenuItem>
             ))}

@@ -19,17 +19,15 @@ class Register extends Component {
       order: {
         "employeeId": this.props.user,
         "subtotal": 0,
-        'discount': 0,
         "tax": 0,
         "total": 0,
         "scale_reference": ""
       },
-      discountValue: 0,
-      discountActive: false,
-      discountIsPercent: false,
       lineItems: [],
+      discounts: [],
       orderProducts: [],
-      discountTriggers: []
+      discountTriggers: [],
+      discountByLineItem: []
     }
   }
 
@@ -76,13 +74,13 @@ class Register extends Component {
   }
 
   newOrderSubmit = (payments, cb) => {
-    let { order, lineItems } = this.state
+    let { order, lineItems, discounts } = this.state
 
     order.lastVisited = moment().format('YYYY-MM-DDTHH:mm:ssZ');
     order.employeeID = this.props.user;
     order.subtotal = this.toCents(this.getSubtotal());
     order.discount = this.toCents(this.getDiscount());
-    order.tax = this.toCents(this.state.discountIsPercent ? this.taxOnPercentDiscount() : this.taxOnFlatDiscount());
+    order.tax = this.toCents(this.getTax());
     order.total = this.toCents(this.getTotal());
 
     let paymentTotal = 0
@@ -103,7 +101,7 @@ class Register extends Component {
       };
     }
     axios
-    .post(`/api/orderbuild`, { order, lineItems, payments })
+    .post(`/api/orderbuild`, { order, lineItems, payments, discounts })
     .then(res => {
       cb(this.toDollars(change), res.data);
     })
@@ -117,42 +115,13 @@ class Register extends Component {
       "discount": 0,
       "subtotal": 0,
       "tax": 0,
-      "total": 0
+      "total": 0,
+      "scale_reference": ""
       },
-      discountValue: 0,
-      discountActive: false,
-      discountIsPercent: false,
-      lineItems: []
-    })
-  }
-
-  setDiscount = (value, percent) => {
-    if(percent) {
-      let lineItems = [...this.state.lineItems]
-      lineItems.forEach(lineItem => {
-        lineItem.discount = (lineItem.price * (value / 100))
-      })
-      this.setState({
-        lineItems,
-        discountValue: value,
-        discountActive: true,
-        discountIsPercent: true
-      })
-    }
-    else {
-
-      this.setState({
-        discountValue: value,
-        discountActive: true,
-        discountIsPercent: false
-    })}
-  }
-
-  removeDiscount = () => {
-    this.setState({
-      discountValue: 0,
-      discountActive: false,
-      discountIsPercent: false
+      lineItems: [],
+      discounts: [],
+      orderProducts: [],
+      discountByLineItem: []
     })
   }
 
@@ -165,60 +134,31 @@ class Register extends Component {
     return this.toDollars(output)
   }
 
-  taxOnPercentDiscount = () => {
+  getTax = () => {
     let output = 0;
-    this.state.lineItems.forEach(lineItem => {
-      output += ((lineItem.price - lineItem.discount) * lineItem.quantity * (lineItem.tax_percent / 100))
+    this.state.lineItems.forEach((lineItem, index) => {
+      output += (((lineItem.price * lineItem.quantity) - this.state.discountByLineItem[index]) * (lineItem.tax_percent / 100))
     })
-    return this.toDollars(output)
-  }
-
-  taxOnFlatDiscount = () => {
-    let output = 0;
-    this.state.lineItems.forEach(lineItem => {
-      output += (lineItem.price * lineItem.quantity * (lineItem.tax_percent / 100))
-    })
-    output -= (this.state.discountValue * 0.05)
     return this.toDollars(output)
   }
 
   getDiscount = () => {
-    let output = 0;
-    if(this.state.discountIsPercent) {
-      this.state.lineItems.forEach(lineItem => {
-        output += (lineItem.discount * lineItem.quantity)
-      })
-    }
-    else {
-      output = this.state.discountValue
-    }
+    let output = 0
+    this.state.discounts.forEach(discount => {
+      output += discount.total
+    })
     return this.toDollars(output);
   }
 
   getTotal = () => {
     let subtotal = this.getSubtotal();
-    let tax = this.state.discountIsPercent ? this.taxOnPercentDiscount() : this.taxOnFlatDiscount();
-    let discount = this.getDiscount()
-    let total = this.toCents(subtotal) + this.toCents(tax) - this.toCents(discount);
+    let discounts = this.getDiscount();
+    let tax = this.getTax();
+    let total = this.toCents(subtotal) - this.toCents(discounts) + this.toCents(tax);
     return this.toDollars(total);
   }
 
   ////////////////////////////////////////////
-
-  priceAfterDiscount = (total, discountValue, percentage) => {
-    let discount = {
-      finalPrice: 0,
-      deducted: 0
-    }
-    if(percentage) {
-      discount.finalPrice = (total * (1 - (discountValue / 100)))
-    }
-    else {
-      discount.finalPrice = total - discountValue;
-    }
-    discount.deducted = total - discount.finalPrice
-    return discount;
-  }
 
   componentDidMount() {
     this.getCategories();
@@ -234,37 +174,47 @@ class Register extends Component {
     let itemPresent = lineItems.some(lineItem => lineItem.product_id === product.id)
 
     if(itemPresent) {
+      //If present add Line Item QTY and then add to the order metrics.
       lineItems.find(item => item.product_id === product.id).quantity += 1;
-      order.subtotal += product.price;
-      order.tax += (product.price * (product.tax_percent/100))
-      order.total = order.subtotal + order.tax;
-      this.setState({ lineItems, order });
+      this.setState({ lineItems });
     } else {
-      if(this.state.discountActive && this.state.discountIsPercent) {
-        product.discount = product.price * (this.state.discountValue / 100)
-        product.discount = product.discount.toFixed(2);
-      }
-      else { product.discount = 0}
+      //Build Line Item object
       product.product_id = product.id;
       product.quantity = 1;
       product.price = Number(product.price);
       product.tax_percent = Number(product.tax_percent);
 
-      order.subtotal += product.price;
-      order.tax += (product.price * (product.tax_percent/100))
-      order.total = order.subtotal + order.tax;
-
-
+      //Add Line Item to the order
       lineItems.push(product)
 
-      this.setState({ lineItems, order });
+      this.setState({ lineItems }, () => {
+        this.tallyDiscounts(this.state.lineItems)
+      });
     }
   }
 
-  getProductDiscount(productId) {
+  getProductDiscount(product) {
     return this.state.discountTriggers.filter( e => {
-      return e.product_id === productId
+      return e.product_id == product.id
     })
+  }
+
+  tallyDiscounts(lineItems) {
+    let output = []
+    let discountByLineItem = []
+    lineItems.forEach((lineItem, index) => {
+      let relevantDiscount = this.getProductDiscount(lineItem)
+      discountByLineItem[index] = 0
+      if (relevantDiscount.length > 0) {
+        let discount = {
+          discount_trigger_id: relevantDiscount[0].id,
+          total: lineItem.quantity * relevantDiscount[0].value
+        }
+        output.push(discount)
+        discountByLineItem[index] = lineItem.quantity * relevantDiscount[0].value
+      }
+    })
+    this.setState({ discounts: output, discountByLineItem})
   }
 
   //Quantity Text Field
@@ -308,7 +258,9 @@ class Register extends Component {
     if(item.quantity <= 0) {
       lineItems.splice(index, 1);
       order.total = order.subtotal + order.tax;
-      this.setState({ lineItems, order });
+      this.setState({ lineItems, order }, () => {
+        this.tallyDiscounts(this.state.lineItems)
+      });
       return
     }
 
@@ -321,7 +273,9 @@ class Register extends Component {
     order.total = order.subtotal + order.tax;
     lineItems[index] = item;
 
-    this.setState({ lineItems, order });
+    this.setState({ lineItems, order }, () => {
+        this.tallyDiscounts(this.state.lineItems)
+      });
   }
 
   toDollars(input) {
@@ -366,7 +320,7 @@ class Register extends Component {
     let { admin, dashboard, user } = this.props;
     let subtotal = this.getSubtotal();
     let discount = this.getDiscount();
-    let tax = this.state.discountIsPercent ? this.taxOnPercentDiscount() : this.taxOnFlatDiscount();
+    let tax = this.getTax();
     let total = this.getTotal();
 
 
@@ -453,14 +407,10 @@ class Register extends Component {
               <td>Subtotal</td>
               <td className="total-amount">${subtotal}</td>
             </tr>
-            {
-              this.state.discountActive ? (
             <tr>
               <td>Discount</td>
               <td className="total-amount" style={{color: 'red'}}>-${discount}</td>
             </tr>
-              ) : null
-            }
             <tr>
               <td>Tax</td>
               <td className="total-amount">${tax}</td>
@@ -476,8 +426,6 @@ class Register extends Component {
             newOrderSubmit={this.newOrderSubmit}
             subtotal={subtotal}
             tax={tax}
-            discountActive={this.state.discountActive}
-            discount={discount}
             orderTotal={total}
             resetOrder={this.orderReset}
           />

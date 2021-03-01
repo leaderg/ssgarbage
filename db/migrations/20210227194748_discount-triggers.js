@@ -5,6 +5,7 @@ exports.up = function(knex) {
     t.bigInteger('product_id').unsigned().index().references('id').inTable('products');
     t.boolean('is_percent')
     t.integer('amount').defaultTo(0);
+    t.integer('value').defaultTo(0);
     t.timestamp('start_date')
     t.timestamp('end_date')
   })

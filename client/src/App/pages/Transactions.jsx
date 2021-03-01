@@ -44,6 +44,7 @@ import {
   ExpandMore,
   TableChart,
   Edit,
+  Delete,
   List,
   Replay,
   Close,
@@ -398,6 +399,20 @@ class Transactions extends Component {
     this.setState({ editSelectedOrder }, this.addLineItemToggle)
   }
 
+  // Remove Line Item
+  removeLineItem = (index) => {
+    let editSelectedOrder = this.state.editSelectedOrder
+    editSelectedOrder.lineItems.splice(index, 1)
+    this.setState({ editSelectedOrder })
+  }
+
+  //Remove Payment Method
+  removePaymentMethod = (index) => {
+    let editSelectedOrder = this.state.editSelectedOrder
+    editSelectedOrder.payments.splice(index, 1)
+    this.setState({ editSelectedOrder })
+  }
+
   //Edit Payment Method
   editPaymentTypeInput = event => {
     let type = event.target.value
@@ -434,6 +449,23 @@ class Transactions extends Component {
     this.setState({ editSelectedOrder})
   }
 
+  buildCharges = (payments) => {
+    let charges = []
+    payments.forEach( payment => {
+      if (payment.payment_method == 'Charge') {
+        charges.push(
+         {customer_id: this.state.editSelectedOrder.order[0].customer_id,
+          order_id: this.state.editSelectedOrder.order[0].id,
+          last_visited: this.state.editSelectedOrder.order[0].last_visited,
+          amount: payment.amount}
+        )
+      }
+    })
+    return charges
+  }
+
+
+
   //Submit Edited Order
   submitEditedOrder = () => {
     let data = this.state.editSelectedOrder;
@@ -441,10 +473,13 @@ class Transactions extends Component {
     data.order[0].tax = this.toCents(this.getTax())
     data.order[0].total = this.toCents(this.getTotal())
 
+    data.charges = this.buildCharges(data.payments)
+
     axios
     .post(`/api/editorder`, { data })
     .then( res => {
-      alert('sent')
+      this.getOrders()
+      this.handleClose()
     })
   }
 
@@ -492,7 +527,7 @@ class Transactions extends Component {
     const sCustomer = this.state.selectedOrder.customer[0];
     const sPayments = this.state.selectedOrder.payments
     const editSelectedOrder = this.state.editSelectedOrder
-    let paymentMethodList = ['Cash', 'Debit', 'Credit']
+    let paymentMethodList = ['Cash', 'Debit', 'Credit', 'Charge']
 
     const classes = {
       button: {
@@ -659,6 +694,7 @@ class Transactions extends Component {
                         <TableCell align="right">Unit</TableCell>
                         <TableCell align="right">Sum</TableCell>
                         <TableCell align="right"></TableCell>
+                        <TableCell align="right"></TableCell>
                       </TableRow>
                       {editSelectedOrder.lineItems.map((lineItem, index) => {
                         return(
@@ -670,6 +706,11 @@ class Transactions extends Component {
                         <TableCell>
                           <IconButton aria-label="Quotes" onClick={() => this.editLineItemSelected(index)}>
                             <Edit />
+                          </IconButton>
+                        </TableCell>
+                        <TableCell>
+                          <IconButton aria-label="Quotes" onClick={() => this.removeLineItem(index)}>
+                            <Delete />
                           </IconButton>
                         </TableCell>
                       </TableRow>
@@ -697,6 +738,11 @@ class Transactions extends Component {
                           <TableCell>
                             <IconButton aria-label="Quotes" onClick={() => this.editPaymentSelected(index)}>
                               <Edit />
+                            </IconButton>
+                          </TableCell>
+                          <TableCell>
+                            <IconButton aria-label="Quotes" onClick={() => this.removePaymentMethod(index)}>
+                              <Delete />
                             </IconButton>
                           </TableCell>
                         </TableRow>
@@ -744,7 +790,7 @@ class Transactions extends Component {
           </Card>
         </DialogContent>
         <DialogActions>
-          <Button variant="contained" color="secondary" className={classes.button}>
+          <Button variant="contained" color="secondary" className={classes.button} onClick={this.handleClose}>
             Cancel
           </Button>
           <Button variant="contained" color="primary" className={classes.button} onClick={this.submitEditedOrder}>
