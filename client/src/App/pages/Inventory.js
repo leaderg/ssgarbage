@@ -83,6 +83,14 @@ class Inventory extends Component {
         loyaltyApplied: false,
         categoryId: null
       },
+      selectedProduct: {
+        name: "",
+        sku: "",
+        taxed: true,
+        taxPercent: 0,
+        loyaltyApplied: false,
+        categoryId: null
+      },
       showProductModal: false,
       showCreateProductModal:false,
       showCreateCategoryModal: false,
