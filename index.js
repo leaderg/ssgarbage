@@ -459,6 +459,11 @@ app.get('/api/orders/:orderId', (req, res) => {
   })
 })
 
+app.get('/api/discountTriggersAll', (req,res) => {
+  knex('discount_triggers')
+  .then(output => res.json(output))
+})
+
 app.post('/api/rangereport', (req,res) => {
   let { startDate, endDate } = req.body.dates;
   let orderIds = [];

@@ -115,8 +115,11 @@ class Transactions extends Component {
       selectQuantity: 0,
 
       customerList: [],
-      selectedCustomer: {}
+      selectedCustomer: {},
 
+      discounts: [],
+      discountTriggers: [],
+      discountByLineItem: []
     }
   }
 
@@ -231,8 +234,10 @@ class Transactions extends Component {
         selectedOrder: res.data,
         editSelectedOrder: res.data,
         transactionModalToggle: true
-      },
+      }, () => {
+        this.tallyDiscounts()
         this.handleOpen()
+      }
       )
     })
   }
@@ -254,6 +259,15 @@ class Transactions extends Component {
       this.setState({
         productList
       });
+    })
+  }
+
+  getAllDiscountTriggers() {
+    axios
+    .get('/api/discountTriggersAll')
+    .then(res => {
+      const discountTriggers = res.data;
+      this.setState({ discountTriggers })
     })
   }
 
@@ -321,8 +335,8 @@ class Transactions extends Component {
     this.setState({
       editLineItemInput: this.state.editSelectedOrder.lineItems[index],
       editLineItemIndex: index
-    },
-      this.editLineItemToggle()
+    }, () => {
+      this.editLineItemToggle()}
     )
   }
 
@@ -391,7 +405,7 @@ class Transactions extends Component {
     let quantity = event.target.value
     let editLineItemInput = this.state.editLineItemInput
     editLineItemInput.quantity = quantity
-    this.setState({ editLineItemInput })
+    this.setState({ editLineItemInput }, () => this.tallyDiscounts())
   }
 
   //Add Line Item Methods
@@ -422,14 +436,17 @@ class Transactions extends Component {
     newLineItem.quantity = Number(this.state.selectQuantity)
     let editSelectedOrder = this.state.editSelectedOrder
     editSelectedOrder.lineItems.push(newLineItem)
-    this.setState({ editSelectedOrder }, this.addLineItemToggle)
+    this.setState({ editSelectedOrder }, () => {
+      this.tallyDiscounts()
+      this.addLineItemToggle()
+    })
   }
 
   // Remove Line Item
   removeLineItem = (index) => {
     let editSelectedOrder = this.state.editSelectedOrder
     editSelectedOrder.lineItems.splice(index, 1)
-    this.setState({ editSelectedOrder })
+    this.setState({ editSelectedOrder }, () => this.tallyDiscounts())
   }
 
   //Remove Payment Method
@@ -494,8 +511,13 @@ class Transactions extends Component {
 
   //Submit Edited Order
   submitEditedOrder = () => {
+    if (this.getPaid() != this.getTotal()) {
+      alert('Payments and total amount do not match.')
+    } else {
+
     let data = this.state.editSelectedOrder;
     data.order[0].subtotal = this.toCents(this.getSubtotal())
+    data.order[0].discount = this.toCents(this.getDiscount())
     data.order[0].tax = this.toCents(this.getTax())
     data.order[0].total = this.toCents(this.getTotal())
 
@@ -507,6 +529,7 @@ class Transactions extends Component {
       this.getOrders()
       this.handleClose()
     })
+    }
   }
 
   //Order Helper Functions//////////////////
@@ -518,18 +541,27 @@ class Transactions extends Component {
     return this.toDollars(output)
   }
 
+  getDiscount = () => {
+    let output = 0
+    this.state.discounts.forEach(discount => {
+      output += discount.total
+    })
+    return this.toDollars(output);
+  }
+
   getTax = () => {
     let output = 0;
-    this.state.editSelectedOrder.lineItems.forEach(lineItem => {
-      output += (lineItem.price * lineItem.quantity * (lineItem.tax_percent / 100))
+    this.state.editSelectedOrder.lineItems.forEach((lineItem, index) => {
+      output += (((lineItem.price * lineItem.quantity) - this.state.discountByLineItem[index]) * (lineItem.tax_percent / 100))
     })
     return this.toDollars(output)
   }
 
   getTotal = () => {
     let subtotal = this.getSubtotal();
+    let discounts = this.getDiscount();
     let tax = this.getTax();
-    let total = this.toCents(subtotal) + this.toCents(tax);
+    let total = this.toCents(subtotal) - this.toCents(discounts) + this.toCents(tax);
     return this.toDollars(total);
   }
 
@@ -541,10 +573,39 @@ class Transactions extends Component {
     return this.toDollars(output);
   }
 
+  tallyDiscounts = () => {
+    let output = []
+    let discountByLineItem = []
+    let lineItems = this.state.editSelectedOrder.lineItems
+    lineItems.forEach((lineItem, index) => {
+
+      let relevantDiscount = this.getProductDiscount(lineItem)
+      discountByLineItem[index] = 0
+      if (relevantDiscount.length > 0) {
+        let discount = {
+          discount_trigger_id: relevantDiscount[0].id,
+          total: lineItem.quantity * relevantDiscount[0].value
+        }
+        output.push(discount)
+        discountByLineItem[index] = lineItem.quantity * relevantDiscount[0].value
+      }
+    })
+    this.setState({ discounts: output, discountByLineItem})
+  }
+
+  getProductDiscount(product) {
+    let orderDate = this.state.editSelectedOrder.order[0].last_visited
+    return this.state.discountTriggers.filter( e => {
+      return (e.product_id == product.product_id) && moment(orderDate).isAfter(moment(e.start_date)) && moment(orderDate).isBefore(moment(e.end_date))
+    })
+  }
+
+
   componentDidMount() {
     this.getOrders();
     this.getCategories();
     this.getCustomers();
+    this.getAllDiscountTriggers()
   }
 
   render() {
@@ -794,7 +855,7 @@ class Transactions extends Component {
                       </TableRow>
                       <TableRow>
                         <TableCell colSpan={2}>Discount</TableCell>
-                        <TableCell align="right">$</TableCell>
+                        <TableCell align="right">${this.getDiscount()}</TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell colSpan={2}>Tax</TableCell>
