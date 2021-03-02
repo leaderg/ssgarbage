@@ -3,6 +3,9 @@ import axios from 'axios';
 import moment from 'moment';
 import MomentUtils from "@date-io/moment";
 
+import NavbarMain from '../Components/NavbarMain'
+
+
 import {
   Box,
   IconButton,
@@ -44,7 +47,7 @@ const useStyles = makeStyles((theme) => ({
     },
   }));
 
-function Discounts() {
+function Discounts({ admin, dashboard, user }) {
 
   const [discountTriggers, updateDiscountTriggers] = useState([]);
   const [categories, updateCategories] = useState([]);
@@ -142,15 +145,16 @@ function Discounts() {
   }
 
   return (
+    <div className="App">
+      <NavbarMain admin={admin} dashboard={dashboard}/>
     <Box className={classes.dashboardContainer} m={2}>
-      <Grid container spacing={2}>
+      <Grid container spacing={2} alignItems="stretch">
         <Grid className={classes.pageTitle} item xs={12}>
-          <Typography variant="h3" color="primary" align="center">
+          <Typography variant="h3" align="center">
             Discounts
           </Typography>
         </Grid>
-        <Grid item xs={8}>
-        <Card mt={2}>
+        <Grid item xs={8} component={Card}>
           <CardHeader
             title={"Discount Triggers"}
             avatar={<List />}
@@ -196,10 +200,8 @@ function Discounts() {
               </TableBody>
             </Table>
           </CardContent>
-        </Card>
         </Grid>
-        <Grid item xs={4}>
-        <Card mt={2}>
+        <Grid item xs={4} component={Card}>
           <CardHeader
             title={"Add New Discount"}
             avatar={<List />}
@@ -293,10 +295,10 @@ function Discounts() {
             Create Discount
           </Button>
           </CardActions>
-        </Card>
         </Grid>
       </Grid>
     </Box>
+    </div>
   );
 }
 

@@ -246,6 +246,18 @@ app.post('/api/customers/:customerId', (req,res) => {
   })
 })
 
+app.post('/api/addNote', (req,res) => {
+  let note = {
+    note: req.body.note,
+    date: moment().format('YYYY-MM-DDTHH:mm:ssZ')
+  }
+  knex('notes')
+  .insert(note)
+  .then(result => {
+    res.sendStatus(200)
+  })
+})
+
 app.post('/api/orderbuild', (req,res) => {
   let order = req.body.order;
   let lineItems = req.body.lineItems;
@@ -502,14 +514,28 @@ app.post('/api/rangereport', (req,res) => {
           .sum('charges.amount')
           .groupBy(['customers.name'])
           .then(chargesByCustomer => {
-            let output = {
-              orders: orders,
-              payments: payments,
-              productReport: lineItems,
-              chargeReport: charges,
-              chargeReportByCustomer: chargesByCustomer
-            }
-            res.json(output)
+            knex('notes')
+            .where('date', '>=', startDate.toString())
+            .where('date', '<', endDate.toString())
+            .then(notes => {
+              let output = {
+                ordersLength: orders.length,
+                payments: payments,
+                productReport: lineItems,
+                chargeReport: charges,
+                chargeReportByCustomer: chargesByCustomer,
+                notes: notes,
+                totalDiscount: 0,
+                totalSales: 0,
+                totalTax: 0
+              }
+              orders.forEach(order => {
+                output.totalDiscount += Number(order.discount)
+                output.totalSales += Number(order.total)
+                output.totalTax += Number(order.tax)
+              })
+              res.json(output)
+            })
           })
         })
       }))

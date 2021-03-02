@@ -47,6 +47,13 @@ class NavbarMain extends Component {
           </li>
         </Link>
         : null }
+        { admin ?
+        <Link to={'/discounts'}>
+          <li className='navbar-item'>
+            Discounts
+          </li>
+        </Link>
+        : null }
         { dashboard ?
         <Link to={'/transactions'}>
           <li className='navbar-item'>

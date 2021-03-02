@@ -6,6 +6,7 @@ import moment from 'moment';
 import CustomerModal from '../Components/CustomerModal'
 import PaymentModal from '../Components/PaymentModal'
 import NavbarMain from '../Components/NavbarMain'
+import NoteModal from '../Components/Notes'
 
 class Register extends Component {
 
@@ -431,6 +432,7 @@ class Register extends Component {
           />
         </div>
         <div className="cr-clear"></div>
+        <NoteModal/>
       </div>
     </div>
     );
