@@ -66,3 +66,43 @@ This section has moved here: https://facebook.github.io/create-react-app/docs/de
 ### `yarn build` fails to minify
 
 This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+
+## Knex Heroku Failure
+
+PG and KNEX need to be latest. Node Needs to be manually set in package.json:
+`"engines": {
+    "node": "12.16.1"
+  },`
+
+## Knex Pagination
+Add so that you can easily paginate.
+
+`const knex = require('knex')(config);
+const { attachPaginate } = require('knex-paginate');
+attachPaginate();`
+
+Create a route:
+
+`router.get("/paginated-results", (req, res) => {
+  const page = req.query.page;
+  return knex("artists").paginate({
+    perPage: 10,
+    currentPage: page
+  }).then(results => {
+    res.json(results)
+  })
+})`
+
+results.data - will hold artist data
+results.pagination - will hold pagination object (total for count)
+
+## Knex Batch Update
+This function lets you batch update. You can call it and use a then after it to do what you want.
+
+`batchPaymentUpdate = async payments => {
+  for(let i = 0; i < payments.length; i++) {
+    await knex('payments')
+    .where({ id: payments[i].id})
+    .update(payments[i])
+  }
+}`

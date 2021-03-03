@@ -62,6 +62,13 @@ const styles = {
     borderLeftWidth: 0,
     borderTopWidth: 0
   },
+  biCol: {
+    width: "50%",
+    borderStyle: "solid",
+    borderWidth: 1,
+    borderLeftWidth: 0,
+    borderTopWidth: 0
+  },
   cell: {
     margin: "auto",
     marginTop: 5,
@@ -84,10 +91,13 @@ class Reports extends Component {
         cash: 0,
         debit: 0,
         credit: 0,
-        giftCard: 0
+        charge: 0
       },
       orders: [],
       productReport: [],
+      chargeReport: [],
+      chargeReportByCustomer: [],
+      notes: []
     }
   }
 
@@ -98,7 +108,7 @@ class Reports extends Component {
 
   getCategories = () => {
     axios
-      .get(`/api/categories`)
+      .get(`/api/allCategories`)
       .then(res => {
         const categories = res.data;
         this.setState({ categories });
@@ -146,26 +156,24 @@ class Reports extends Component {
     axios
     .post(`/api/rangereport`, { dates })
     .then(res => {
-      let orders = res.data.orders;
+      let orderLength = res.data.orderLenge
       let productReport = res.data.productReport
-      let totalDiscount = 0
-      let totalSales = 0
-      let totalTax = 0
-      orders.forEach(order => {
-        totalDiscount += Number(order.discount)
-        totalSales += Number(order.total)
-        totalTax += Number(order.tax)
-      })
-      let transactionAverage = totalSales/orders.length
+      let chargeReport = res.data.chargeReport
+      let chargeReportByCustomer = res.data.chargeReportByCustomer
+      let totalDiscount = res.data.totalDiscount
+      let totalSales = res.data.totalSales
+      let totalTax = res.data.totalTax
+      let notes = res.data.notes
+      let transactionAverage = totalSales/orderLength
 
       let payments = {
         cash: this.paymentTypeTotal(res.data.payments, "Cash"),
         debit: this.paymentTypeTotal(res.data.payments, "Debit"),
         credit: this.paymentTypeTotal(res.data.payments, "Credit"),
-        giftCard: this.paymentTypeTotal(res.data.payments, "Gift Card")
+        charge: this.paymentTypeTotal(res.data.payments, "Charge")
       }
 
-      this.setState({ orders, totalDiscount, totalSales, totalTax, productReport, transactionAverage, payments, startDate, endDate })
+      this.setState({totalDiscount, totalSales, totalTax, notes, productReport, chargeReport, chargeReportByCustomer, transactionAverage, payments, startDate, endDate })
     })
   }
 
@@ -246,27 +254,27 @@ class Reports extends Component {
     }
   }
 
-  employeeArray = () => {
-    if (this.state.employees){
-        let output = []
-        for (let employee of this.state.employees) {
-          let total = 0;
-          for(let order of this.state.orders) {
-            if (employee.first_name == order.employee_name) {
-              total += (Number(order.total) - Number(order.tax));
-            }
-          }
-          output.push({name: employee.first_name, total: this.toDollars(total)})
-        }
-        return output;}
-    else {
-      return [{name: '', total: ''}]
-    }
-  }
+  // employeeArray = () => {
+  //   if (this.state.employees){
+  //       let output = []
+  //       for (let employee of this.state.employees) {
+  //         let total = 0;
+  //         for(let order of this.state.orders) {
+  //           if (employee.first_name == order.employee_name) {
+  //             total += (Number(order.total) - Number(order.tax));
+  //           }
+  //         }
+  //         output.push({name: employee.first_name, total: this.toDollars(total)})
+  //       }
+  //       return output;}
+  //   else {
+  //     return [{name: '', total: ''}]
+  //   }
+  // }
 
   render() {
     let categoryTotals = this.categoryArray()
-    let employeeTotals = this.employeeArray()
+    // let employeeTotals = this.employeeArray()
     return (
     <div className="App">
       <h1>Reports</h1>
@@ -302,16 +310,16 @@ class Reports extends Component {
               <Text style={styles.tallyLine}>Cash</Text>
               <Text style={styles.tallyLine}>Debit</Text>
               <Text style={styles.tallyLine}>Credit</Text>
-              <Text style={styles.tallyLine}>Gift Card</Text>
+              <Text style={styles.tallyLine}>Charge</Text>
               </View>
               <View style={styles.value}>
               <Text style={styles.tallyLine}>${this.toDollars(this.state.payments.cash)}</Text>
               <Text style={styles.tallyLine}>${this.toDollars(this.state.payments.debit)}</Text>
               <Text style={styles.tallyLine}>${this.toDollars(this.state.payments.credit)}</Text>
-              <Text style={styles.tallyLine}>${this.toDollars(this.state.payments.giftCard)}</Text>
+              <Text style={styles.tallyLine}>${this.toDollars(this.state.payments.charge)}</Text>
               </View>
             </View>
-            <Text style={styles.title}>Employee Net Sales</Text>
+{/*            <Text style={styles.title}>Employee Net Sales</Text>
             <View style={styles.section}>
               <View style={styles.label}>
                 {employeeTotals.map((employee) => {
@@ -323,17 +331,25 @@ class Reports extends Component {
                 return(<Text style={styles.tallyLine}>${employee.total}</Text>)
                 })}
               </View>
-            </View>
+            </View>*/}
             <Text style={styles.title}>Category Totals</Text>
             <View style={styles.section}>
               <View style={styles.label}>
                 {categoryTotals.map((category) => {
-                return(<Text style={styles.tallyLine}>{category.name}</Text>)
+                return (category.total > 0 ? (<Text style={styles.tallyLine}>{category.name}</Text>) : null)
                 })}
               </View>
               <View style={styles.value}>
                 {categoryTotals.map((category) => {
-                return(<Text style={styles.tallyLine}>${category.total}</Text>)
+                return( category.total > 0 ? (<Text style={styles.tallyLine}>${category.total}</Text>) : null)
+                })}
+              </View>
+            </View>
+            <Text style={styles.title}>Notes</Text>
+            <View style={styles.section}>
+              <View>
+                {this.state.notes.map((note) => {
+                return (<Text style={styles.tallyLine}>{note.note}</Text>)
                 })}
               </View>
             </View>
@@ -385,19 +401,106 @@ class Reports extends Component {
                   <span>${this.toDollars(this.state.payments.credit)}</span>
                 </div>
                 <div>
-                  <span className="report-payment-type">Gift Card</span>
-                  <span>${this.toDollars(this.state.payments.giftCard)}</span>
+                  <span className="report-payment-type">Charge</span>
+                  <span>${this.toDollars(this.state.payments.charge)}</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
-
-          <div>
-            <h3>Orders In Date Range</h3>
+        <div>
+            <h3>Charges</h3>
 
 {/*===============================*/}
         <PDFDownloadLink document={
+        <Document>
+          <Page size="A4" style={styles.page}>
+            <Text style={styles.header}>SS Garbage Charge Report</Text>
+            <View>
+              <Text>Date Range:</Text>
+              <Text>From {moment(this.state.startDate).format('MM-DD-YYYY')} to {moment(this.state.endDate).format('MM-DD-YYYY')}</Text>
+            </View>
+            <Text style={styles.title}>Total Charge Amount By Customer In Date Range</Text>
+            <View style={styles.section}>
+              <View style={styles.table}>
+                <View style={styles.row}>
+                  <View style={styles.biCol}>
+                    <Text style={styles.cell}>Customer</Text>
+                  </View>
+                  <View style={styles.biCol}>
+                    <Text style={styles.cell}>Amount</Text>
+                  </View>
+                </View>
+                {this.state.chargeReportByCustomer.length === 0 ? (
+
+                <Text style={styles.header}>No Orders In This Date Range</Text>
+
+                 ) : (
+
+                this.state.chargeReportByCustomer.map(customer => {
+                return(
+                <View style={styles.row}>
+                  <View style={styles.biCol}>
+                    <Text style={styles.cell}>{customer.customer_name || 'Unassigned'}</Text>
+                  </View>
+                  <View style={styles.biCol}>
+                    <Text style={styles.cell}>${this.toDollars(customer.sum)}</Text>
+                  </View>
+                </View>
+
+                )}))}
+              </View>
+            </View>
+          </Page>
+        </Document>
+      } fileName={`SSGarbageCharges${moment(this.state.startDate).format('YYYY-MM-DD')}to${moment(this.state.endDate).format('YYYY-MM-DD')}.pdf`}>
+      {({ blob, url, loading, error }) => (<div>{loading ? 'Loading document...' : 'Download Report!'}</div>)}
+      </PDFDownloadLink>
+{/*================================*/}
+
+            <div class="report-wrapper">
+              <div class="report-table">
+                <div class="report-row report-header">
+                  <div class="report-cell">
+                    Order #
+                  </div>
+                  <div class="report-cell">
+                    Amount
+                  </div>
+                  <div class="report-cell">
+                    Customer Name
+                  </div>
+                  <div class="report-cell">
+                    Date
+                  </div>
+                </div>
+
+                    {this.state.chargeReport.map((charge) => {
+                      return(
+
+                <div class="report-row">
+                  <div class="report-cell" data-title="Product Name">
+                    {charge.order_id}
+                  </div>
+                  <div class="report-cell" data-title="Price">
+                    ${this.toDollars(charge.amount)}
+                  </div>
+                  <div class="report-cell" data-title="Qty">
+                    {charge.customer_name || "Unassigned"}
+                  </div>
+                  <div class="report-cell" data-title="Total">
+                    {moment(charge.last_visited).format('YYYY-MM-DD')}
+                  </div>
+                </div>
+                     )
+                    })}
+              </div>
+            </div>
+          {/*<div>
+            <h3>Orders In Date Range</h3>*/}
+
+{/*===============================*/}
+    {/*    <PDFDownloadLink document={
         <Document>
           <Page size="A4" style={styles.page}>
             <Text style={styles.header}>SS Garbage Order Report</Text>
@@ -459,10 +562,10 @@ class Reports extends Component {
         </Document>
       } fileName={`SSGarbageOrders${moment(this.state.startDate).format('YYYY-MM-DD')}to${moment(this.state.endDate).format('YYYY-MM-DD')}.pdf`}>
       {({ blob, url, loading, error }) => (<div>{loading ? 'Loading document...' : 'Download Report!'}</div>)}
-      </PDFDownloadLink>
+      </PDFDownloadLink>*/}
 {/*================================*/}
 
-            <div class="report-wrapper">
+{/*            <div class="report-wrapper">
 
               <div class="report-table">
 
@@ -516,55 +619,67 @@ class Reports extends Component {
             )}))}
 
               </div>
-            </div>
+            </div>*/}
 
 
-
-          </div>
-        </div>
-
-          <div style={{marginBottom: "100px"}}>
+          <div>
             <h3>Product Performance</h3>
             <div class="report-wrapper">
               <div class="report-table">
-              <div class="report-row report-header">
-                <div class="report-cell">
-                  Product
+                <div class="report-row report-header">
+                  <div class="report-cell">
+                    Product
+                  </div>
+                  <div class="report-cell">
+                    Price
+                  </div>
+                  <div class="report-cell">
+                    Quantity
+                  </div>
+                  <div class="report-cell">
+                    Total
+                  </div>
                 </div>
-                <div class="report-cell">
-                  Price
+
+                          {this.state.productReport.map((product) => {
+                            return(
+
+                <div class="report-row">
+                  <div class="report-cell" data-title="Product Name">
+                    {product.name}
+                  </div>
+                  <div class="report-cell" data-title="Price">
+                    ${this.toDollars(product.price)}
+                  </div>
+                  <div class="report-cell" data-title="Qty">
+                    {product.sum}
+                  </div>
+                  <div class="report-cell" data-title="Total">
+                    ${this.toDollars(product.price * product.sum)}
+                  </div>
                 </div>
-                <div class="report-cell">
-                  Quantity
-                </div>
-                <div class="report-cell">
-                  Total
+                          )
+                        })}
+              </div>
+            </div>
+          </div>
+          <h3>Notes</h3>
+          <div class="report-wrapper">
+            <div class="report-table">
+                  {this.state.notes.map((charge) => {
+                    return(
+              <div class="report-row">
+                <div class="report-cell" data-title="Total">
+                  {charge.note}
                 </div>
               </div>
-
-              {this.state.productReport.map((product) => {
-                return(
-
-                  <div class="report-row">
-                    <div class="report-cell" data-title="Product Name">
-                      {product.name}
-                    </div>
-                    <div class="report-cell" data-title="Price">
-                      ${this.toDollars(product.price)}
-                    </div>
-                    <div class="report-cell" data-title="Qty">
-                      {product.sum}
-                    </div>
-                    <div class="report-cell" data-title="Total">
-                      ${this.toDollars(product.price * product.sum)}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
+                   )})}
             </div>
           </div>
 
+
+</div>
+        </div>
       <OrderReviewModal info={this.state.singleOrderInfo} close={this.closeOrderModal}/>
     </div>
     );

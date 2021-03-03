@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
 import ReactToPrint from 'react-to-print';
 
+import moment from 'moment';
+
 function toDollars(input) {
   input = Number(input);
   input  /= 100
@@ -26,7 +28,10 @@ class ComponentToPrint extends React.Component {
           <h3>Salt Spring Garbage</h3>
           360 Blackburn<br/>
           Salt Spring Island, BC V8K2B8<br/>
-          (250) 537-2167<br/>
+          (250) 537-2167<br/><br/>
+          {moment(this.props.date).format("LLL")}
+          Ref #: {this.props.orderNumber}<br/>
+
         </div>
 
         <div className="receipt-line-items">
@@ -67,7 +72,7 @@ class ComponentToPrint extends React.Component {
 
         <div className="receipt-footer">
           Thank you for choosing Salt Spring Garbage!<br/>
-          GST# Get Number
+          GST# 89204 3548 RT001
         </div>
       </div>
     );
@@ -82,7 +87,9 @@ class PaymentsModal extends Component {
       receiptPage: false,
       inputAmount: 0,
       payments: [],
-      change: "0.00"
+      change: "0.00",
+      date: "",
+      orderNumber: null
     }
   }
 
@@ -133,10 +140,12 @@ class PaymentsModal extends Component {
     this.setState({ payments })
   }
 
-  receiptView = (change) => {
+  receiptView = (change, orderInfo) => {
     this.setState({
       receiptPage: true,
-      change: change
+      change: change,
+      orderNumber: orderInfo.id,
+      date: orderInfo.last_visited
     })
   }
 
@@ -146,7 +155,9 @@ class PaymentsModal extends Component {
       receiptPage: false,
       openModal: false,
       payments: [],
-      change: "0.00"
+      change: "0.00",
+      date: "",
+      orderNumber: null
     })
   }
 
@@ -171,6 +182,8 @@ class PaymentsModal extends Component {
               total={this.props.orderTotal}
               lineItems={this.props.lineItems}
               discountActive={this.props.discountActive}
+              date={this.state.date}
+              orderNumber={this.state.orderNumber}
             />
             </div>
             <div className="cr-receipt-close noselect" onClick={() => this.done()}>Done</div>
@@ -208,7 +221,7 @@ class PaymentsModal extends Component {
             <button onClick={() => this.createPayment("Cash")}>Cash</button>
             <button onClick={() => this.createPayment("Debit")}>Debit</button>
             <button onClick={() => this.createPayment("Credit")}>Credit</button>
-            <button onClick={() => this.createPayment("Gift Card")}>Gift Card</button>
+            <button onClick={() => this.createPayment("Charge")}>Charge</button>
           </div>
           <div className="cr-payment-button-cancel noselect" onClick={() => this.hideModal()}>Cancel</div>
           <div className="customer-button-confirm noselect" onClick={() => this.props.newOrderSubmit(this.state.payments, this.receiptView)}>Checkout</div>

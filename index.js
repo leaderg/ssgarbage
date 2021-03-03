@@ -15,6 +15,9 @@ const app = express();
 const knexConfig  = require("./knexfile")[process.env.KNEX];
 const knex        = require("knex")(knexConfig);
 
+const { attachPaginate } = require('knex-paginate');
+attachPaginate();
+
 // Serve the static files from the React app
 app.use(express.static(path.join(__dirname, 'client/build')));
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -74,6 +77,14 @@ app.put('/api/employees/:id', (req,res) => {
 
 app.get('/api/categories', (req,res) => {
   knex('categories')
+  .where({ hidden: false })
+  .asCallback((err,result) => {
+    res.json(result);
+  });
+})
+
+app.get('/api/allCategories', (req,res) => {
+  knex('categories')
   .asCallback((err,result) => {
     res.json(result);
   });
@@ -86,6 +97,15 @@ app.post('/api/categories', (req,res) => {
   .then(entry => res.sendStatus(200))
   .catch(err => {res.send(err)})
 });
+
+app.delete('/api/categories/:categoryId', (req, res) => {
+  knex('categories')
+  .where({id: req.params.categoryId})
+  .update({hidden: true})
+  .then(oldCategory => {
+    res.sendStatus(200);
+  })
+})
 
 app.post('/api/products', (req,res) => {
   let product = req.body.product;
@@ -217,7 +237,6 @@ app.post('/api/customers', (req,res) => {
 app.post('/api/customers/:customerId', (req,res) => {
   let customerId = req.params.customerId;
   let customer = req.body.customer
-  console.dir(customer)
 
   knex('customers')
   .where({id: customer.id})
@@ -227,10 +246,23 @@ app.post('/api/customers/:customerId', (req,res) => {
   })
 })
 
+app.post('/api/addNote', (req,res) => {
+  let note = {
+    note: req.body.note,
+    date: moment().format('YYYY-MM-DDTHH:mm:ssZ')
+  }
+  knex('notes')
+  .insert(note)
+  .then(result => {
+    res.sendStatus(200)
+  })
+})
+
 app.post('/api/orderbuild', (req,res) => {
   let order = req.body.order;
   let lineItems = req.body.lineItems;
   let payments = req.body.payments;
+  let discounts = req.body.discounts;
 
   //Remove unnecessary information from lineItems array
   let keep = ['product_id', 'quantity'];
@@ -239,33 +271,166 @@ app.post('/api/orderbuild', (req,res) => {
         if(keep.indexOf(key) === -1)delete lineItems[i][key];
     }
   }
+
+  //Construct a Charge entry
+  let charges = [];
+
+
   knex('orders')
   .insert({
     employee_id: order.employeeId,
     customer_id: order.customer_id,
     discount: order.discount,
     subtotal: order.subtotal,
+    scale_reference: order.scale_reference,
     tax: order.tax,
     total: order.total,
     last_visited: order.lastVisited
   })
-  .returning('id')
+  .returning(['id', 'last_visited'])
   .then(orderId => {
+    payments.forEach(item => {
+      item.payment_method == "Charge" ?
+        charges.push({
+          customer_id: order.customer_id,
+          amount: item.amount,
+          order_id: orderId[0].id
+        }) : null
+    })
+
     lineItems.forEach(item => {
-      item.order_id = orderId[0];
+      item.order_id = orderId[0].id;
     })
     knex('line_items')
     .insert(lineItems)
-    .then((entry)=> {
-      payments.forEach(payment => {
-        payment.order_id = orderId[0];
+    .then((entry) => {
+      discounts.forEach(discount => {
+        discount.order_id = orderId[0].id
       })
-      knex('payments')
-      .insert(payments)
-      .then((entry) => res.sendStatus(200))
+      console.dir(discounts)
+    knex('discounts')
+    .insert(discounts)
+      .then((entry)=> {
+    payments.forEach(payment => {
+      payment.order_id = orderId[0].id;
+    })
+    knex('payments')
+    .insert(payments)
+      .then((entry) => {
+    charges.length > 0 ?
+    knex('charges')
+    .insert(charges)
+    .then(entry => res.json(orderId[0]))
+    :
+    res.json(orderId[0])})
     })
   })
+    })
   .catch(err => res.send(err))
+})
+
+app.post('/api/editorder', (req, res) => {
+
+  let data = req.body.data
+  let order = data.order[0]
+  let charges = data.charges;
+
+  let payments = data.payments
+
+  payments.forEach( payment => {
+    delete payment.id
+  })
+
+  let lineItems = data.lineItems
+
+  lineItems.forEach( lineItem => {
+    delete lineItem.id
+    delete lineItem.tax_percent
+    delete lineItem.taxed
+    delete lineItem.name
+    delete lineItem.price
+  })
+
+  knex('orders')
+  .where({id: order.id})
+  .update(order)
+    .then( output => {
+  paymentsUpdate(payments, order.id)
+    .then( output => {
+  lineItemsUpdate(lineItems, order.id)
+    .then( output => {
+  knex('charges')
+  .where({order_id: order.id})
+  .del()
+    .then( output => {
+  knex('charges')
+  .insert(charges)
+    .then(output => {
+      res.sendStatus(200)
+          })
+        })
+      })
+    })
+  })
+})
+
+paymentsUpdate = async (payments, orderId) => {
+  await knex('payments').where({order_id: orderId}).del()
+  await knex('payments').insert(payments)
+}
+
+lineItemsUpdate = async (lineItems, orderId) => {
+  await knex('line_items').where({order_id: orderId}).del()
+  await knex('line_items').insert(lineItems)
+}
+
+
+app.post('/api/orders', (req, res) => {
+  let { startDate, endDate } = req.body.dates;
+  let { currentPage, perPage } = req.body.pagination;
+  knex('orders')
+  .select(['orders.id', 'orders.last_visited', 'customers.name', 'orders.total', 'orders.scale_reference'])
+  .leftJoin('customers', 'orders.customer_id', 'customers.id')
+  .where('last_visited', '>=', startDate.toString())
+  .where('last_visited', '<', endDate.toString())
+  .orderBy('last_visited', 'asc')
+  .paginate({
+    perPage: perPage,
+    currentPage: currentPage,
+    isLengthAware: true
+  })
+  .then((orders) => {
+    res.json(orders)
+  })
+})
+
+app.post('/api/ordersearch', (req, res) => {
+  let { currentPage, perPage } = req.body.pagination;
+  let searchterm = req.body.searchterm;
+  knex('orders')
+  .select(['orders.id', 'orders.last_visited', 'customers.name', 'orders.total', 'orders.scale_reference'])
+  .leftJoin('customers', 'orders.customer_id', 'customers.id')
+  .where('orders.id', (Number(searchterm) || null))
+  .orWhere('customers.name', 'ilike', `%${searchterm}%`)
+  .orWhere('scale_reference', 'ilike', `%${searchterm}%`)
+  .orderBy('last_visited', 'asc')
+  .paginate({
+    perPage: 200,
+    currentPage: currentPage,
+    isLengthAware: true
+  })
+  .then((orders) => {
+    res.json(orders)
+  })
+})
+
+app.post('/api/customersearch', (req, res) => {
+  input = req.body.searchterm;
+  knex('customers')
+  .where('customers.name', 'ilike', `%${input}%`)
+  .then(customers => {
+    res.json(customers)
+  })
 })
 
 app.get('/api/orders/:orderId', (req, res) => {
@@ -289,11 +454,16 @@ app.get('/api/orders/:orderId', (req, res) => {
           response.payments = payments;
           knex('line_items')
           .where({order_id: order[0].id})
-          .select(['line_items.quantity','products.name', 'products.price', 'products.taxed', 'products.tax_percent'])
+          .select(['line_items.id', 'line_items.order_id', 'line_items.product_id','line_items.quantity','products.name', 'products.price', 'products.taxed', 'products.tax_percent'])
           .join('products', 'line_items.product_id', '=', 'products.id')
           .then((line_items) => {
             response.lineItems = line_items;
-            res.json(response)
+            knex('charges')
+            .where({order_id: req.params.orderId})
+            .then((charges) => {
+              response.charges = charges;
+              res.json(response)
+            })
           })
         })
       })
@@ -301,11 +471,16 @@ app.get('/api/orders/:orderId', (req, res) => {
   })
 })
 
+app.get('/api/discountTriggersAll', (req,res) => {
+  knex('discount_triggers')
+  .then(output => res.json(output))
+})
 
 app.post('/api/rangereport', (req,res) => {
   let { startDate, endDate } = req.body.dates;
   let orderIds = [];
-  let lineItemIds = []
+  let lineItemIds = [];
+  let chargeIds = [];
   knex('orders')
   .select(['orders.id', 'orders.last_visited', 'orders.tax', 'orders.total', 'orders.discount', 'customers.name as customer_name', 'employees.first_name as employee_name'])
   .where('last_visited', '>=', startDate.toString())
@@ -327,16 +502,60 @@ app.post('/api/rangereport', (req,res) => {
       .join('products', 'line_items.product_id', '=', 'products.id')
       .sum('quantity')
       .then((lineItems => {
-          let output = {
-            orders: orders,
-            payments: payments,
-            productReport: lineItems,
-          }
-          res.json(output)
+        knex('charges')
+        .select(['charges.id', 'charges.order_id', 'charges.last_visited', 'charges.amount', 'customers.name as customer_name'])
+        .whereIn('order_id', orderIds)
+        .leftJoin('customers', 'charges.customer_id', '=', 'customers.id')
+        .then(charges => {
+          knex('charges')
+          .select(['customers.name as customer_name'])
+          .whereIn('order_id', orderIds)
+          .leftJoin('customers', 'charges.customer_id', '=', 'customers.id')
+          .sum('charges.amount')
+          .groupBy(['customers.name'])
+          .then(chargesByCustomer => {
+            knex('notes')
+            .where('date', '>=', startDate.toString())
+            .where('date', '<', endDate.toString())
+            .then(notes => {
+              let output = {
+                ordersLength: orders.length,
+                payments: payments,
+                productReport: lineItems,
+                chargeReport: charges,
+                chargeReportByCustomer: chargesByCustomer,
+                notes: notes,
+                totalDiscount: 0,
+                totalSales: 0,
+                totalTax: 0
+              }
+              orders.forEach(order => {
+                output.totalDiscount += Number(order.discount)
+                output.totalSales += Number(order.total)
+                output.totalTax += Number(order.tax)
+              })
+              res.json(output)
+            })
+          })
+        })
       }))
     }))
   })
   .catch(err => {res.send(err)})
+})
+
+app.get('/api/discountTriggers', ( req, res ) => {
+  knex('discount_triggers')
+  .select(['discount_triggers.id', 'products.id as product_id', 'discount_triggers.is_percent', 'discount_triggers.value', 'discount_triggers.amount', 'discount_triggers.start_date', 'discount_triggers.end_date', 'products.name'])
+  .where('end_date', '>', moment().startOf('day'))
+  .leftJoin('products', 'discount_triggers.product_id', '=', 'products.id')
+  .then(result => res.json(result))
+})
+
+app.post('/api/discountTriggers', ( req, res ) => {
+  knex('discount_triggers')
+  .insert(req.body.newDiscountTrigger)
+  .then(x => res.sendStatus(200))
 })
 
 app.get('/api/data', (req, res) => {

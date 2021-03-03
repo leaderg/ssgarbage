@@ -5,6 +5,8 @@ import Login from './pages/Login';
 import List from './pages/List';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import Transactions from './pages/Transactions'
+import Discounts from './pages/Discounts'
 import withAuth from './withAuth'
 
 class App extends Component {
@@ -16,6 +18,8 @@ class App extends Component {
           <Route path='/register' component={withAuth(Register)}/>
           <Route path='/dashboard' component={withAuth(Dashboard)}/>
           <Route exact path='/list' component={List}/>
+          <Route path='/transactions' component={withAuth(Transactions)}/>
+          <Route path='/discounts' component={withAuth(Discounts)}/>
         </Switch>
       </div>
     )
