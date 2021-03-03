@@ -4,8 +4,8 @@ exports.up = function(knex) {
     t.increments('id').unsigned().primary();
     t.bigInteger('product_id').unsigned().index().references('id').inTable('products');
     t.boolean('is_percent')
-    t.integer('amount').defaultTo(0);
-    t.integer('value').defaultTo(0);
+    t.decimal('amount', 16, 4).defaultTo(0);
+    t.decimal('value', 16, 4).defaultTo(0);
     t.timestamp('start_date')
     t.timestamp('end_date')
   })

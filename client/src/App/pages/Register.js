@@ -408,10 +408,11 @@ class Register extends Component {
               <td>Subtotal</td>
               <td className="total-amount">${subtotal}</td>
             </tr>
-            <tr>
-              <td>Discount</td>
-              <td className="total-amount" style={{color: 'red'}}>-${discount}</td>
-            </tr>
+            {discount > 0 ?
+                        <tr>
+                          <td>Discount</td>
+                          <td className="total-amount" style={{color: 'red'}}>-${discount}</td>
+                        </tr> : null}
             <tr>
               <td>Tax</td>
               <td className="total-amount">${tax}</td>

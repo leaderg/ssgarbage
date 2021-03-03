@@ -70,7 +70,7 @@ function Discounts({ admin, dashboard, user }) {
     axios
     .get('/api/discountTriggers')
     .then(res => updateDiscountTriggers(res.data))
-  })
+  }, [])
 
   const getProducts = (event) => {
     axios
@@ -101,6 +101,11 @@ function Discounts({ admin, dashboard, user }) {
     };
     axios
     .post(`/api/discountTriggers`, { newDiscountTrigger })
+    .then((res) => {
+      axios
+      .get('/api/discountTriggers')
+      .then(res => updateDiscountTriggers(res.data))
+    })
   }
 
   const startDateChange = event => {
@@ -138,7 +143,7 @@ function Discounts({ admin, dashboard, user }) {
 
   const valueHandler = () => {
     return type ? (
-       selectedProduct.price * amount / 100
+       selectedProduct.price * (amount / 100)
       ) : (
        toCents(amount)
     )
@@ -188,7 +193,7 @@ function Discounts({ admin, dashboard, user }) {
                   <TableRow hover key={index}>
                     <TableCell>{trigger.name}</TableCell>
                     <TableCell>{trigger.is_percent ? "Percentage" : "Flat Rate"}</TableCell>
-                    <TableCell>{trigger.is_percent ? `${trigger.amount}%` : `$${trigger.amount}`}</TableCell>
+                    <TableCell>{trigger.is_percent ? `${Number(trigger.amount).toFixed(2)}%` : `$${Number(trigger.amount).toFixed(2)}`}</TableCell>
                     <TableCell>${toDollars(trigger.value)}</TableCell>
                     <TableCell>{moment(trigger.start_date).format('MM/DD/YYYY - hh:mm a')}</TableCell>
                     <TableCell>{moment(trigger.end_date).format('MM/DD/YYYY - hh:mm a')}</TableCell>
