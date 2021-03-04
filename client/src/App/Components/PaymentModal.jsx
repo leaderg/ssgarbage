@@ -57,13 +57,13 @@ class ComponentToPrint extends React.Component {
         <div className="receipt-totals-div">
           <div className="receipt-totals-labels">
             <div>Sub Total</div>
-            {this.props.discountActive ? (<div>Discount</div>) : null}
+            {this.props.discount > 0 ? (<div>Discount</div>) : null}
             <div>Tax</div>
             <div><b>Total</b></div>
           </div>
           <div className="receipt-totals-values">
             <div>${this.props.subtotal}</div>
-            {this.props.discountActive ? (<div>-${this.props.discount}</div>) : null}
+            {this.props.discount > 0 ? (<div>-${this.props.discount}</div>) : null}
             <div>${this.props.tax}</div>
             <div><b>${this.props.total}</b></div>
           </div>
@@ -162,6 +162,7 @@ class PaymentsModal extends Component {
   }
 
   render() {
+    // let printLength = 100 + this.props.length
     let receiptModal = (
       <div className="obscuring-background">
         <div className="customer-modal">
@@ -170,7 +171,7 @@ class PaymentsModal extends Component {
           <ReactToPrint
               trigger={() => <div className="cr-receipt-print-btn noselect">Print Receipt</div>}
               content={() => this.componentRef}
-              pageStyle="@page { size: 80mm 297mm }"
+              pageStyle={`@page { size: 80mm ${85 + (this.props.lineItems.length * 6)}mm }`}
             />
             <div  style={{display: 'none'}}>
             <ComponentToPrint

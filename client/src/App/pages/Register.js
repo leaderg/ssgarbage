@@ -109,6 +109,8 @@ class Register extends Component {
   }
 
   orderReset = () => {
+    let scale = document.getElementById('scaleReferenceInput')
+    scale.value = ""
     this.setState({
       customerResetID: this.state.customerResetID+1,
       order: {
@@ -367,7 +369,7 @@ class Register extends Component {
             <CustomerModal setCustomer={this.setCustomer} key={this.state.customerResetID}/>
             <tr>
               <td>Scale Reference</td>
-              <td className="total-amount"><input type="text" onChange={this.scaleReferenceChange} /></td>
+              <td className="total-amount"><input id="scaleReferenceInput" type="text" onChange={this.scaleReferenceChange} /></td>
             </tr>
           </table>
 
@@ -425,6 +427,7 @@ class Register extends Component {
           <PaymentModal
             lineItems={this.state.lineItems}
             order={this.state.order}
+            discount={discount}
             newOrderSubmit={this.newOrderSubmit}
             subtotal={subtotal}
             tax={tax}
