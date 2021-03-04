@@ -427,6 +427,7 @@ class Register extends Component {
           <PaymentModal
             lineItems={this.state.lineItems}
             order={this.state.order}
+            discount={discount}
             newOrderSubmit={this.newOrderSubmit}
             subtotal={subtotal}
             tax={tax}
