@@ -35,7 +35,8 @@ import {
   FormControl,
   InputLabel,
   Select,
-  DialogActions
+  DialogActions,
+  ButtonGroup
 } from "@material-ui/core";
 
 import {
@@ -187,6 +188,38 @@ class Transactions extends Component {
 
   searchTrigger = () => {
     this.searchOrders();
+  }
+
+  // Date Ranges
+
+  todayDateRange = () => {
+    let startDate = moment().startOf('day').format('YYYY-MM-DDTHH:mm:ssZ');
+    let endDate =  moment().endOf('day').format('YYYY-MM-DDTHH:mm:ssZ');
+    this.setState({ startDate, endDate }, () => this.getOrders())
+  }
+
+  yesterdayDateRange = () => {
+    let startDate = moment().startOf('day').subtract(1,'d').format('YYYY-MM-DDTHH:mm:ssZ');
+    let endDate =  moment().endOf('day').subtract(1,'d').format('YYYY-MM-DDTHH:mm:ssZ');
+    this.setState({ startDate, endDate }, () => this.getOrders())
+  }
+
+  weekDateRange = () => {
+    let startDate = moment().startOf('day').subtract(7,'d').format('YYYY-MM-DDTHH:mm:ssZ');
+    let endDate =  moment().endOf('day').format('YYYY-MM-DDTHH:mm:ssZ');
+    this.setState({ startDate, endDate }, () => this.getOrders())
+  }
+
+  currentMonthDateRange = () => {
+    let startDate = moment().startOf('month').format('YYYY-MM-DDTHH:mm:ssZ');
+    let endDate =  moment().endOf('day').format('YYYY-MM-DDTHH:mm:ssZ');
+    this.setState({ startDate, endDate }, () => this.getOrders())
+  }
+
+  lastMonthDateRange = () => {
+    let startDate = moment().subtract(1,'months').startOf('month').format('YYYY-MM-DDTHH:mm:ssZ');
+    let endDate =  moment().subtract(1,'months').endOf('month').format('YYYY-MM-DDTHH:mm:ssZ');
+     this.setState({ startDate, endDate }, () => this.getOrders())
   }
 
   //API Calls
@@ -1150,7 +1183,8 @@ class Transactions extends Component {
               }}
               />
           </Grid>
-          <Grid item xs={2} justify="space-around">
+          <Grid container xs={4} spacing={2}>
+          <Grid item xs={6} justify="space-around">
             <KeyboardDatePicker
               id="date-picker-dialog"
               label={<span style={{opacity: 0.6}}>Start Date</span>}
@@ -1162,7 +1196,7 @@ class Transactions extends Component {
               }}
             />
           </Grid>
-          <Grid item xs={2} justify="space-around">
+          <Grid item xs={6} justify="space-around">
             <KeyboardDatePicker
               id="date-picker-dialog"
               label={<span style={{opacity: 0.6}}>End Date</span>}
@@ -1173,6 +1207,15 @@ class Transactions extends Component {
                 "aria-label": "change date"
               }}
             />
+            </Grid>
+            <Grid item xs={12}>
+            <ButtonGroup disableElevation variant="contained">
+              <Button onClick={this.todayDateRange}>Today</Button>
+              <Button onClick={this.yesterdayDateRange}>Yesterday</Button>
+              <Button onClick={this.currentMonthDateRange}>This Month</Button>
+              <Button onClick={this.lastMonthDateRange}>Last Month</Button>
+            </ButtonGroup>
+            </Grid>
           </Grid>
         </Grid>
         </Box>
