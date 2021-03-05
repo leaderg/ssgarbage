@@ -547,7 +547,7 @@ app.post('/api/rangereport', (req,res) => {
 app.get('/api/discountTriggers', ( req, res ) => {
   knex('discount_triggers')
   .select(['discount_triggers.id', 'products.id as product_id', 'discount_triggers.is_percent', 'discount_triggers.value', 'discount_triggers.amount', 'discount_triggers.start_date', 'discount_triggers.end_date', 'products.name'])
-  .where('end_date', '>', moment().startOf('day'))
+  .where('end_date', '>', moment())
   .leftJoin('products', 'discount_triggers.product_id', '=', 'products.id')
   .then(result => res.json(result))
 })
@@ -556,6 +556,15 @@ app.post('/api/discountTriggers', ( req, res ) => {
   knex('discount_triggers')
   .insert(req.body.newDiscountTrigger)
   .then(x => res.sendStatus(200))
+})
+
+app.get('/api/deleteDiscount/:discountId', (req, res) => {
+  knex('discount_triggers')
+  .where({id: req.params.discountId})
+  .update({end_date: moment().format('YYYY-MM-DDTHH:mm:ssZ')})
+  .then(result => {
+    res.json(result)
+  })
 })
 
 app.get('/api/data', (req, res) => {
