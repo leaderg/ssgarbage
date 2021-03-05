@@ -162,7 +162,6 @@ class PaymentsModal extends Component {
   }
 
   render() {
-    // let printLength = 100 + this.props.length
     let receiptModal = (
       <div className="obscuring-background">
         <div className="customer-modal">

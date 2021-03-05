@@ -22,7 +22,11 @@ import {
   TableCell,
   TableBody,
   MenuItem,
-  TextField
+  TextField,
+  Dialog,
+  DialogTitle,
+  DialogActions,
+  InputAdornment
 } from "@material-ui/core"
 
 import {
@@ -30,7 +34,7 @@ import {
   KeyboardDatePicker
 } from "@material-ui/pickers";
 
-import { Add, List } from '@material-ui/icons';
+import { Add, List, Delete } from '@material-ui/icons';
 
 import { makeStyles } from '@material-ui/core/styles';
 
@@ -58,19 +62,24 @@ function Discounts({ admin, dashboard, user }) {
   const [startDate, updateStartDate] = useState(moment().startOf('day'));
   const [endDate, updateEndDate] = useState(moment().endOf('day'));
 
+  const [showModal, setModal] = useState(false);
+  const [discountId, setDiscountId] = useState(null);
+
   const classes = useStyles();
 
   useEffect(() => {
     axios
     .get(`/api/categories`)
-    .then(res => updateCategories(res.data) )
+    .then(categoriesList => {
+      axios
+      .get('/api/discountTriggers')
+      .then(res => {
+        updateDiscountTriggers(res.data)
+        updateCategories(categoriesList.data)
+      })
+    })
   }, []);
 
-  useEffect(() => {
-    axios
-    .get('/api/discountTriggers')
-    .then(res => updateDiscountTriggers(res.data))
-  }, [])
 
   const getProducts = (event) => {
     axios
@@ -130,6 +139,17 @@ function Discounts({ admin, dashboard, user }) {
     }
   }
 
+  const deleteDiscount = (id) => {
+    axios
+    .get(`/api/deleteDiscount/${id}`)
+    .then(x => {
+      setModal(false)
+      axios
+      .get('/api/discountTriggers')
+      .then(res => updateDiscountTriggers(res.data))
+    })
+  }
+
   const toDollars = (input) => {
     input = Number(input);
     input  /= 100
@@ -148,6 +168,29 @@ function Discounts({ admin, dashboard, user }) {
        toCents(amount)
     )
   }
+
+  const selectDiscount = (id) => {
+    setDiscountId(id)
+    setModal(true)
+  }
+
+  const DeleteDiscountModal = (
+       <Dialog
+        open={showModal}
+        onClose={() => setModal(false)}
+      >
+        <DialogTitle>Delete Discount</DialogTitle>
+        <DialogActions>
+          <Button variant="contained" color="secondary" className={classes.button}
+          onClick={() => setModal(false)}>
+            Cancel
+          </Button>
+          <Button variant="contained" color="primary" className={classes.button} onClick={() => deleteDiscount(discountId)}>
+            Confirm
+          </Button>
+        </DialogActions>
+      </Dialog>
+      )
 
   return (
     <div className="App">
@@ -186,6 +229,8 @@ function Discounts({ admin, dashboard, user }) {
                   <TableCell>
                     End Date
                   </TableCell>
+                  <TableCell>
+                  </TableCell>
                 </TableRow>
               </TableHead>
               {discountTriggers.map((trigger, index) => {
@@ -197,6 +242,7 @@ function Discounts({ admin, dashboard, user }) {
                     <TableCell>${toDollars(trigger.value)}</TableCell>
                     <TableCell>{moment(trigger.start_date).format('MM/DD/YYYY - hh:mm a')}</TableCell>
                     <TableCell>{moment(trigger.end_date).format('MM/DD/YYYY - hh:mm a')}</TableCell>
+                    <TableCell><IconButton onClick={() => selectDiscount(trigger.id)}><Delete/></IconButton></TableCell>
                   </TableRow>
                   )
                 })
@@ -263,6 +309,9 @@ function Discounts({ admin, dashboard, user }) {
             type='number'
             placeholder="0"
             onChange={(e) => inputAmount(e)}
+            InputProps={{
+              startAdornment: <InputAdornment position="start">{type ? "%" : "$"}</InputAdornment>
+            }}
           />
           </Grid>
           <Grid item xs={6} justify="space-around">
@@ -303,6 +352,7 @@ function Discounts({ admin, dashboard, user }) {
         </Grid>
       </Grid>
     </Box>
+    {DeleteDiscountModal}
     </div>
   );
 }
