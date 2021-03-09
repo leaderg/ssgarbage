@@ -790,7 +790,7 @@ class Transactions extends Component {
                     <TableBody>
                     <h3>Customer</h3>
                     <TableRow>
-                      <TableCell colSpan={4}>{editSelectedOrder.customer.name ? editSelectedOrder.customer.name : "No Customer Selected"}</TableCell>
+                      <TableCell colSpan={5}>{editSelectedOrder.customer.name ? editSelectedOrder.customer.name : "No Customer Selected"}</TableCell>
                       <TableCell>
                         <IconButton aria-label="Quotes" onClick={this.editCustomerToggle}>
                           <Edit />
@@ -800,7 +800,7 @@ class Transactions extends Component {
 
                     <h3>Scale Reference</h3>
                     <TableRow>
-                      <TableCell colSpan={4}>{editSelectedOrder.order[0] ? (editSelectedOrder.order[0].scale_reference === "" ? "No Scale Reference" : editSelectedOrder.order[0].scale_reference) : "No Scale Reference"}</TableCell>
+                      <TableCell colSpan={5}>{editSelectedOrder.order[0] ? (editSelectedOrder.order[0].scale_reference === "" ? "No Scale Reference" : editSelectedOrder.order[0].scale_reference) : "No Scale Reference"}</TableCell>
                       <TableCell>
                         <IconButton aria-label="Quotes" onClick={this.editScaleRefToggle}>
                           <Edit />
@@ -836,9 +836,9 @@ class Transactions extends Component {
                         </TableCell>
                       </TableRow>
                       )})}
-                      <TableRow onClick={this.addLineItemToggle}>
-                        <TableCell colSpan={4}>Add Product</TableCell>
-                        <TableCell>
+                      <TableRow hover onClick={this.addLineItemToggle}>
+                        <TableCell colSpan={5}>Add Product</TableCell>
+                        <TableCell colspan={2}>
                         <IconButton aria-label="Quotes">
                           <Add />
                         </IconButton>
@@ -847,15 +847,15 @@ class Transactions extends Component {
 
                     <h3>Payments</h3>
                         <TableRow>
-                          <TableCell>Method</TableCell>
-                          <TableCell>Amount</TableCell>
+                          <TableCell colspan={2}>Method</TableCell>
+                          <TableCell colspan={2}>Amount</TableCell>
                           <TableCell></TableCell>
                         </TableRow>
                         {editSelectedOrder.payments.map((payment, index) => {
                           return(
                         <TableRow>
-                          <TableCell>{payment.payment_method}</TableCell>
-                          <TableCell>${this.toDollars(payment.amount)}</TableCell>
+                          <TableCell colspan={2}>{payment.payment_method}</TableCell>
+                          <TableCell colspan={2}>${this.toDollars(payment.amount)}</TableCell>
                           <TableCell>
                             <IconButton aria-label="Quotes" onClick={() => this.editPaymentSelected(index)}>
                               <Edit />
@@ -869,8 +869,8 @@ class Transactions extends Component {
                         </TableRow>
                           )})}
                         <TableRow onClick={this.addPaymentToggle}>
-                          <TableCell colSpan={4}>Add Payment</TableCell>
-                          <TableCell>
+                          <TableCell colSpan={5}>Add Payment</TableCell>
+                          <TableCell colspan={2}>
                           <IconButton aria-label="Quotes">
                             <Add />
                           </IconButton>
