@@ -89,8 +89,11 @@ class Register extends Component {
       paymentTotal += payment.amount
     });
     let change = (paymentTotal - order.total);
-    if (this.toDollars(order.total) > this.toDollars(paymentTotal)) {
-      alert("Payments Insufficient" + `total:${order.total} Payments:${paymentTotal}`)
+    if (order.total > paymentTotal) {
+      alert(`Payments Insufficient
+        Order Total:    $${this.toDollars(order.total)}
+        Payment Total:  $${this.toDollars(paymentTotal)}
+        `)
       return;
     }
     if (this.toDollars(order.total) < this.toDollars(paymentTotal)) {

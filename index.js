@@ -307,7 +307,6 @@ app.post('/api/orderbuild', (req,res) => {
       discounts.forEach(discount => {
         discount.order_id = orderId[0].id
       })
-      console.dir(discounts)
     knex('discounts')
     .insert(discounts)
       .then((entry)=> {
@@ -393,7 +392,7 @@ app.post('/api/orders', (req, res) => {
   .leftJoin('customers', 'orders.customer_id', 'customers.id')
   .where('last_visited', '>=', startDate.toString())
   .where('last_visited', '<', endDate.toString())
-  .orderBy('last_visited', 'asc')
+  .orderBy('last_visited', 'desc')
   .paginate({
     perPage: perPage,
     currentPage: currentPage,
@@ -413,7 +412,7 @@ app.post('/api/ordersearch', (req, res) => {
   .where('orders.id', (Number(searchterm) || null))
   .orWhere('customers.name', 'ilike', `%${searchterm}%`)
   .orWhere('scale_reference', 'ilike', `%${searchterm}%`)
-  .orderBy('last_visited', 'asc')
+  .orderBy('last_visited', 'desc')
   .paginate({
     perPage: 200,
     currentPage: currentPage,

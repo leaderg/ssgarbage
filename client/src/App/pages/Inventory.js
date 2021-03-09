@@ -375,18 +375,26 @@ class Inventory extends Component {
                 )})}
                 </Tabs>
               </Grid>
-              <Grid item xs={8}>
-                <CardHeader
-                  title={"Products"}
-                  titleTypographyProps={{variant:'h4' }}
-                  avatar={<List />}
-                  action={
-                    <>
-                    <IconButton aria-label="Quotes" onClick={() =>this.setState({showCreateProductModal: true})}>
-                      <Add />
-                    </IconButton>
-                    </>
-                }/>
+                <Grid item xs={8}>
+              {selectedCategoryId ?
+                  <CardHeader
+                    title={"Products"}
+                    titleTypographyProps={{variant:'h4' }}
+                    avatar={<List />}
+                    action={
+                      <IconButton aria-label="Quotes" onClick={() =>this.setState({showCreateProductModal: true})}>
+                        <Add />
+                      </IconButton>
+                  }/> :
+                  <CardHeader
+                    title={"Products"}
+                    titleTypographyProps={{variant:'h4' }}
+                    avatar={<List />}
+                    action={
+                      <>
+                      </>}
+                  />
+              }
                 <TableContainer style={{maxHeight: '70vh'}}>
                 <Table stickyHeader >
                   <TableHead>
@@ -404,6 +412,7 @@ class Inventory extends Component {
                       </TableCell>
                     </TableRow>
                   </TableHead>
+                  {this.state.selectedCategoryId == null ? <h3 style={{textAlign:'right'}}>Please Select A Category</h3> : null}
                   {products.map((product, index) => {
                     return (
                       <TableRow hover key={index}>
