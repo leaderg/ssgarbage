@@ -69,6 +69,13 @@ const styles = {
     borderLeftWidth: 0,
     borderTopWidth: 0
   },
+  quartcol: {
+    width: "25%",
+    borderStyle: "solid",
+    borderWidth: 1,
+    borderLeftWidth: 0,
+    borderTopWidth: 0
+  },
   cell: {
     margin: "auto",
     marginTop: 5,
@@ -450,6 +457,50 @@ class Reports extends Component {
 
                 )}))}
               </View>
+            </View>
+            <Text style={styles.title}>Charge Orders</Text>
+            <View style={styles.section}>
+              <View style={styles.table}>
+                <View style={styles.row}>
+                  <View style={styles.quartcol}>
+                    <Text style={styles.cell}>Transaction ID</Text>
+                  </View>
+                  <View style={styles.quartcol}>
+                    <Text style={styles.cell}>Customer</Text>
+                  </View>
+                  <View style={styles.quartcol}>
+                    <Text style={styles.cell}>Amount</Text>
+                  </View>
+                  <View style={styles.quartcol}>
+                    <Text style={styles.cell}>Date</Text>
+                  </View>
+                </View>
+                {this.state.chargeReport.length === 0 ? (
+
+                <Text style={styles.header}>No Orders In This Date Range</Text>
+
+                 ) : (
+
+                this.state.chargeReport.map(charge => {
+                return(
+                <View style={styles.row}>
+                  <View style={styles.quartcol}>
+                    <Text style={styles.cell}>{charge.order_id}</Text>
+                  </View>
+                  <View style={styles.quartcol}>
+                    <Text style={styles.cell}>{charge.customer_name || 'Unassigned'}</Text>
+                  </View>
+                  <View style={styles.quartcol}>
+                    <Text style={styles.cell}>${this.toDollars(charge.amount)}</Text>
+                  </View>
+                  <View style={styles.quartcol}>
+                    <Text style={styles.cell}>{moment(charge.last_visited).format('MM/DD/YYYY - hh:mm a')}</Text>
+                  </View>
+                </View>
+
+                )}))}
+
+                 </View>
             </View>
           </Page>
         </Document>
