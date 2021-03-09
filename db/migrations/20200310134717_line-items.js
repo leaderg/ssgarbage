@@ -4,7 +4,7 @@ exports.up = function(knex) {
     t.increments('id').unsigned().primary();
     t.bigInteger('order_id').unsigned().index().references('id').inTable('orders');
     t.bigInteger('product_id').unsigned().index().references('id').inTable('products');
-    t.integer('quantity').defaultTo(0);
+    t.decimal('quantity', 16, 4).defaultTo(0);
   });
 };
 
