@@ -274,6 +274,7 @@ app.post('/api/orderbuild', (req,res) => {
 
   //Construct a Charge entry
   let charges = [];
+  let cheques = [];
 
 
   knex('orders')
@@ -295,7 +296,13 @@ app.post('/api/orderbuild', (req,res) => {
           customer_id: order.customer_id,
           amount: item.amount,
           order_id: orderId[0].id
+        }) : (item.payment_method == "Cheque" ?
+        cheques.push({
+          customer_id: order.customer_id,
+          amount: item.amount,
+          order_id: orderId[0].id
         }) : null
+        )
     })
 
     lineItems.forEach(item => {
@@ -316,17 +323,25 @@ app.post('/api/orderbuild', (req,res) => {
     knex('payments')
     .insert(payments)
       .then((entry) => {
-    charges.length > 0 ?
-    knex('charges')
-    .insert(charges)
+    chargeAndCheques(charges, cheques)
     .then(entry => res.json(orderId[0]))
-    :
-    res.json(orderId[0])})
     })
-  })
+    })
+    })
     })
   .catch(err => res.send(err))
 })
+
+chargeAndCheques = async (charges, cheques) => {
+  if (charges.length > 0) {
+    await knex('charges')
+    .insert(charges)
+  }
+  if (cheques.length > 0) {
+    await knex('cheques')
+    .insert(cheques)
+  }
+}
 
 app.post('/api/editorder', (req, res) => {
 
