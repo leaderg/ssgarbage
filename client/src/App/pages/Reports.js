@@ -361,7 +361,7 @@ class Reports extends Component {
             <View style={styles.section}>
               <View>
                 {this.state.notes.map((note) => {
-                return (<Text style={styles.tallyLine}>{note.note}</Text>)
+                return (<Text style={styles.tallyLine} wrap={false}>{note.note}</Text>)
                 })}
               </View>
             </View>
@@ -435,7 +435,7 @@ class Reports extends Component {
             <Text style={styles.title}>Total Charge Amount By Customer In Date Range</Text>
             <View style={styles.section}>
               <View style={styles.table}>
-                <View style={styles.row}>
+                <View style={styles.row} wrap={false}>
                   <View style={styles.biCol}>
                     <Text style={styles.cell}>Customer</Text>
                   </View>
@@ -451,7 +451,7 @@ class Reports extends Component {
 
                 this.state.chargeReportByCustomer.map(customer => {
                 return(
-                <View style={styles.row}>
+                <View style={styles.row} wrap={false}>
                   <View style={styles.biCol}>
                     <Text style={styles.cell}>{customer.customer_name || 'Unassigned'}</Text>
                   </View>
@@ -466,7 +466,7 @@ class Reports extends Component {
             <Text style={styles.title}>Charge Orders</Text>
             <View style={styles.section}>
               <View style={styles.table}>
-                <View style={styles.row}>
+                <View style={styles.row} wrap={false}>
                   <View style={styles.quartcol}>
                     <Text style={styles.cell}>Transaction ID</Text>
                   </View>
@@ -488,7 +488,7 @@ class Reports extends Component {
 
                 this.state.chargeReport.map(charge => {
                 return(
-                <View style={styles.row}>
+                <View style={styles.row} wrap={false}>
                   <View style={styles.quartcol}>
                     <Text style={styles.cell}>{charge.order_id}</Text>
                   </View>
@@ -510,7 +510,7 @@ class Reports extends Component {
                  <Text style={styles.title}>Total Cheque Amount By Customer In Date Range</Text>
             <View style={styles.section}>
               <View style={styles.table}>
-                <View style={styles.row}>
+                <View style={styles.row} wrap={false}>
                   <View style={styles.biCol}>
                     <Text style={styles.cell}>Customer</Text>
                   </View>
@@ -526,7 +526,7 @@ class Reports extends Component {
 
                 this.state.chequeReportByCustomer.map(customer => {
                 return(
-                <View style={styles.row}>
+                <View style={styles.row} wrap={false}>
                   <View style={styles.biCol}>
                     <Text style={styles.cell}>{customer.customer_name || 'Unassigned'}</Text>
                   </View>
@@ -541,7 +541,7 @@ class Reports extends Component {
             <Text style={styles.title}>Cheque Orders</Text>
             <View style={styles.section}>
               <View style={styles.table}>
-                <View style={styles.row}>
+                <View style={styles.row} wrap={false}>
                   <View style={styles.quartcol}>
                     <Text style={styles.cell}>Transaction ID</Text>
                   </View>
@@ -563,7 +563,7 @@ class Reports extends Component {
 
                 this.state.chequeReport.map(cheque => {
                 return(
-                <View style={styles.row}>
+                <View style={styles.row} wrap={false}>
                   <View style={styles.quartcol}>
                     <Text style={styles.cell}>{cheque.order_id}</Text>
                   </View>
