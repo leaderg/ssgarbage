@@ -540,6 +540,21 @@ class Transactions extends Component {
     return charges
   }
 
+  buildCheques = (payments) => {
+    let cheques = []
+    payments.forEach( payment => {
+      if (payment.payment_method == 'Cheque') {
+        cheques.push(
+         {customer_id: this.state.editSelectedOrder.order[0].customer_id,
+          order_id: this.state.editSelectedOrder.order[0].id,
+          last_visited: this.state.editSelectedOrder.order[0].last_visited,
+          amount: payment.amount}
+        )
+      }
+    })
+    return cheques
+  }
+
 
 
   //Submit Edited Order
@@ -555,6 +570,7 @@ class Transactions extends Component {
     data.order[0].total = this.toCents(this.getTotal())
 
     data.charges = this.buildCharges(data.payments)
+    data.cheques = this.buildCheques(data.payments)
 
     axios
     .post(`/api/editorder`, { data })
@@ -648,7 +664,7 @@ class Transactions extends Component {
     const sCustomer = this.state.selectedOrder.customer[0];
     const sPayments = this.state.selectedOrder.payments
     const editSelectedOrder = this.state.editSelectedOrder
-    let paymentMethodList = ['Cash', 'Debit', 'Credit', 'Charge']
+    let paymentMethodList = ['Cash', 'Debit', 'Credit', 'Charge', 'Cheque']
 
     const classes = {
       button: {

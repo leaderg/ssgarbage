@@ -348,6 +348,7 @@ app.post('/api/editorder', (req, res) => {
   let data = req.body.data
   let order = data.order[0]
   let charges = data.charges;
+  let cheques = data.cheques;
 
   let payments = data.payments
 
@@ -373,12 +374,9 @@ app.post('/api/editorder', (req, res) => {
     .then( output => {
   lineItemsUpdate(lineItems, order.id)
     .then( output => {
-  knex('charges')
-  .where({order_id: order.id})
-  .del()
+  chargesUpdate(charges, order.id)
     .then( output => {
-  knex('charges')
-  .insert(charges)
+  chequesUpdate(cheques, order.id)
     .then(output => {
       res.sendStatus(200)
           })
@@ -387,6 +385,16 @@ app.post('/api/editorder', (req, res) => {
     })
   })
 })
+
+chargesUpdate = async (charges, orderId) => {
+  await knex('charges').where({order_id: orderId}).del()
+  await knex('charges').insert(charges)
+}
+
+chequesUpdate = async (cheques, orderId) => {
+  await knex('cheques').where({order_id: orderId}).del()
+  await knex('cheques').insert(cheques)
+}
 
 paymentsUpdate = async (payments, orderId) => {
   await knex('payments').where({order_id: orderId}).del()
@@ -532,23 +540,39 @@ app.post('/api/rangereport', (req,res) => {
             .where('date', '>=', startDate.toString())
             .where('date', '<', endDate.toString())
             .then(notes => {
-              let output = {
-                ordersLength: orders.length,
-                payments: payments,
-                productReport: lineItems,
-                chargeReport: charges,
-                chargeReportByCustomer: chargesByCustomer,
-                notes: notes,
-                totalDiscount: 0,
-                totalSales: 0,
-                totalTax: 0
-              }
-              orders.forEach(order => {
-                output.totalDiscount += Number(order.discount)
-                output.totalSales += Number(order.total)
-                output.totalTax += Number(order.tax)
+              knex('cheques')
+              .select(['cheques.id', 'cheques.order_id', 'cheques.last_visited', 'cheques.amount', 'customers.name as customer_name'])
+              .whereIn('order_id', orderIds)
+              .leftJoin('customers', 'cheques.customer_id', '=', 'customers.id')
+              .then(cheques => {
+                knex('cheques')
+                .select(['customers.name as customer_name'])
+                .whereIn('order_id', orderIds)
+                .leftJoin('customers', 'cheques.customer_id', '=', 'customers.id')
+                .sum('cheques.amount')
+                .groupBy(['customers.name'])
+                .then(chequesByCustomer => {
+                  let output = {
+                    ordersLength: orders.length,
+                    payments: payments,
+                    productReport: lineItems,
+                    chargeReport: charges,
+                    chargeReportByCustomer: chargesByCustomer,
+                    chequeReport: cheques,
+                    chequeReportByCustomer: chequesByCustomer,
+                    notes: notes,
+                    totalDiscount: 0,
+                    totalSales: 0,
+                    totalTax: 0
+                  }
+                  orders.forEach(order => {
+                    output.totalDiscount += Number(order.discount)
+                    output.totalSales += Number(order.total)
+                    output.totalTax += Number(order.tax)
+                  })
+                  res.json(output)
+                })
               })
-              res.json(output)
             })
           })
         })
@@ -557,6 +581,14 @@ app.post('/api/rangereport', (req,res) => {
   })
   .catch(err => {res.send(err)})
 })
+
+
+
+
+
+
+
+
 
 app.get('/api/discountTriggers', ( req, res ) => {
   knex('discount_triggers')

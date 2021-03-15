@@ -1,6 +1,10 @@
 import React, { Component } from 'react';
 import ReactToPrint from 'react-to-print';
 
+import {
+  CircularProgress
+} from "@material-ui/core";
+
 import moment from 'moment';
 
 function toDollars(input) {
@@ -222,9 +226,15 @@ class PaymentsModal extends Component {
             <button onClick={() => this.createPayment("Debit")}>Debit</button>
             <button onClick={() => this.createPayment("Credit")}>Credit</button>
             <button onClick={() => this.createPayment("Charge")}>Charge</button>
+            <button onClick={() => this.createPayment("Cheque")}>Cheque</button>
           </div>
           <div className="cr-payment-button-cancel noselect" onClick={() => this.hideModal()}>Cancel</div>
+          {
+            this.props.loading ?
+          <div className="customer-button-confirm noselect"><CircularProgress /></div>
+            :
           <div className="customer-button-confirm noselect" onClick={() => this.props.newOrderSubmit(this.state.payments, this.receiptView)}>Checkout</div>
+          }
         </div>
       </div>
     )
