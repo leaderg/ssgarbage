@@ -28,7 +28,8 @@ class Register extends Component {
       discounts: [],
       orderProducts: [],
       discountTriggers: [],
-      discountByLineItem: []
+      discountByLineItem: [],
+      loading: false
     }
   }
 
@@ -74,9 +75,13 @@ class Register extends Component {
     })
   }
 
+  setLoading() {
+    this.setState({loading: true})
+  }
+
   newOrderSubmit = (payments, cb) => {
     let { order, lineItems, discounts } = this.state
-
+    this.setLoading();
     order.lastVisited = moment().format('YYYY-MM-DDTHH:mm:ssZ');
     order.employeeID = this.props.user;
     order.subtotal = this.toCents(this.getSubtotal());
@@ -94,6 +99,7 @@ class Register extends Component {
         Order Total:    $${this.toDollars(order.total)}
         Payment Total:  $${this.toDollars(paymentTotal)}
         `)
+      this.setState({loading: false})
       return;
     }
     if (this.toDollars(order.total) < this.toDollars(paymentTotal)) {
@@ -127,7 +133,8 @@ class Register extends Component {
       lineItems: [],
       discounts: [],
       orderProducts: [],
-      discountByLineItem: []
+      discountByLineItem: [],
+      loading: false
     })
   }
 
@@ -436,6 +443,7 @@ class Register extends Component {
             tax={tax}
             orderTotal={total}
             resetOrder={this.orderReset}
+            loading={this.state.loading}
           />
         </div>
         <div className="cr-clear"></div>

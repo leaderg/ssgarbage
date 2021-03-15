@@ -104,6 +104,8 @@ class Reports extends Component {
       productReport: [],
       chargeReport: [],
       chargeReportByCustomer: [],
+      chequeReport: [],
+      chequeReportByCustomer: [],
       notes: []
     }
   }
@@ -167,6 +169,8 @@ class Reports extends Component {
       let productReport = res.data.productReport
       let chargeReport = res.data.chargeReport
       let chargeReportByCustomer = res.data.chargeReportByCustomer
+      let chequeReport = res.data.chequeReport
+      let chequeReportByCustomer = res.data.chequeReportByCustomer
       let totalDiscount = res.data.totalDiscount
       let totalSales = res.data.totalSales
       let totalTax = res.data.totalTax
@@ -177,10 +181,11 @@ class Reports extends Component {
         cash: this.paymentTypeTotal(res.data.payments, "Cash"),
         debit: this.paymentTypeTotal(res.data.payments, "Debit"),
         credit: this.paymentTypeTotal(res.data.payments, "Credit"),
-        charge: this.paymentTypeTotal(res.data.payments, "Charge")
+        charge: this.paymentTypeTotal(res.data.payments, "Charge"),
+        cheque: this.paymentTypeTotal(res.data.payments, "Cheque")
       }
 
-      this.setState({totalDiscount, totalSales, totalTax, notes, productReport, chargeReport, chargeReportByCustomer, transactionAverage, payments, startDate, endDate })
+      this.setState({totalDiscount, totalSales, totalTax, notes, productReport, chargeReport, chargeReportByCustomer, chequeReport, chequeReportByCustomer,transactionAverage, payments, startDate, endDate })
     })
   }
 
@@ -502,10 +507,85 @@ class Reports extends Component {
 
                  </View>
             </View>
+                 <Text style={styles.title}>Total Cheque Amount By Customer In Date Range</Text>
+            <View style={styles.section}>
+              <View style={styles.table}>
+                <View style={styles.row}>
+                  <View style={styles.biCol}>
+                    <Text style={styles.cell}>Customer</Text>
+                  </View>
+                  <View style={styles.biCol}>
+                    <Text style={styles.cell}>Amount</Text>
+                  </View>
+                </View>
+                {this.state.chequeReportByCustomer.length === 0 ? (
+
+                <Text style={styles.header}>No Orders In This Date Range</Text>
+
+                 ) : (
+
+                this.state.chequeReportByCustomer.map(customer => {
+                return(
+                <View style={styles.row}>
+                  <View style={styles.biCol}>
+                    <Text style={styles.cell}>{customer.customer_name || 'Unassigned'}</Text>
+                  </View>
+                  <View style={styles.biCol}>
+                    <Text style={styles.cell}>${this.toDollars(customer.sum)}</Text>
+                  </View>
+                </View>
+
+                )}))}
+              </View>
+            </View>
+            <Text style={styles.title}>Cheque Orders</Text>
+            <View style={styles.section}>
+              <View style={styles.table}>
+                <View style={styles.row}>
+                  <View style={styles.quartcol}>
+                    <Text style={styles.cell}>Transaction ID</Text>
+                  </View>
+                  <View style={styles.quartcol}>
+                    <Text style={styles.cell}>Customer</Text>
+                  </View>
+                  <View style={styles.quartcol}>
+                    <Text style={styles.cell}>Amount</Text>
+                  </View>
+                  <View style={styles.quartcol}>
+                    <Text style={styles.cell}>Date</Text>
+                  </View>
+                </View>
+                {this.state.chequeReport.length === 0 ? (
+
+                <Text style={styles.header}>No Orders In This Date Range</Text>
+
+                 ) : (
+
+                this.state.chequeReport.map(cheque => {
+                return(
+                <View style={styles.row}>
+                  <View style={styles.quartcol}>
+                    <Text style={styles.cell}>{cheque.order_id}</Text>
+                  </View>
+                  <View style={styles.quartcol}>
+                    <Text style={styles.cell}>{cheque.customer_name || 'Unassigned'}</Text>
+                  </View>
+                  <View style={styles.quartcol}>
+                    <Text style={styles.cell}>${this.toDollars(cheque.amount)}</Text>
+                  </View>
+                  <View style={styles.quartcol}>
+                    <Text style={styles.cell}>{moment(cheque.last_visited).format('MM/DD/YYYY - hh:mm a')}</Text>
+                  </View>
+                </View>
+
+                )}))}
+
+                 </View>
+            </View>
           </Page>
         </Document>
       } fileName={`SSGarbageCharges${moment(this.state.startDate).format('YYYY-MM-DD')}to${moment(this.state.endDate).format('YYYY-MM-DD')}.pdf`}>
-      {({ blob, url, loading, error }) => (<div>{loading ? 'Loading document...' : 'Download Report!'}</div>)}
+      {({ blob, url, loading, error }) => (<div>{loading ? 'Loading document...' : 'Download Charge and Cheque Report'}</div>)}
       </PDFDownloadLink>
 {/*================================*/}
 
