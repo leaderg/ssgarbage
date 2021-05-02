@@ -76,6 +76,13 @@ const styles = {
     borderLeftWidth: 0,
     borderTopWidth: 0
   },
+  cinqcol: {
+    width: "20%",
+    borderStyle: "solid",
+    borderWidth: 1,
+    borderLeftWidth: 0,
+    borderTopWidth: 0
+  },
   cell: {
     margin: "auto",
     marginTop: 5,
@@ -467,16 +474,19 @@ class Reports extends Component {
             <View style={styles.section}>
               <View style={styles.table}>
                 <View style={styles.row} wrap={false}>
-                  <View style={styles.quartcol}>
+                  <View style={styles.cinqcol}>
                     <Text style={styles.cell}>Transaction ID</Text>
                   </View>
-                  <View style={styles.quartcol}>
+                  <View style={styles.cinqcol}>
+                    <Text style={styles.cell}>Scale Reference</Text>
+                  </View>
+                  <View style={styles.cinqcol}>
                     <Text style={styles.cell}>Customer</Text>
                   </View>
-                  <View style={styles.quartcol}>
+                  <View style={styles.cinqcol}>
                     <Text style={styles.cell}>Amount</Text>
                   </View>
-                  <View style={styles.quartcol}>
+                  <View style={styles.cinqcol}>
                     <Text style={styles.cell}>Date</Text>
                   </View>
                 </View>
@@ -489,16 +499,19 @@ class Reports extends Component {
                 this.state.chargeReport.map(charge => {
                 return(
                 <View style={styles.row} wrap={false}>
-                  <View style={styles.quartcol}>
+                  <View style={styles.cinqcol}>
                     <Text style={styles.cell}>{charge.order_id}</Text>
                   </View>
-                  <View style={styles.quartcol}>
+                  <View style={styles.cinqcol}>
+                    <Text style={styles.cell}>{charge.scale_reference}</Text>
+                  </View>
+                  <View style={styles.cinqcol}>
                     <Text style={styles.cell}>{charge.customer_name || 'Unassigned'}</Text>
                   </View>
-                  <View style={styles.quartcol}>
+                  <View style={styles.cinqcol}>
                     <Text style={styles.cell}>${this.toDollars(charge.amount)}</Text>
                   </View>
-                  <View style={styles.quartcol}>
+                  <View style={styles.cinqcol}>
                     <Text style={styles.cell}>{moment(charge.last_visited).format('MM/DD/YYYY - hh:mm a')}</Text>
                   </View>
                 </View>
@@ -596,6 +609,9 @@ class Reports extends Component {
                     Order #
                   </div>
                   <div class="report-cell">
+                    Scale Reference
+                  </div>
+                  <div class="report-cell">
                     Amount
                   </div>
                   <div class="report-cell">
@@ -612,6 +628,9 @@ class Reports extends Component {
                 <div class="report-row">
                   <div class="report-cell" data-title="Product Name">
                     {charge.order_id}
+                  </div>
+                  <div class="report-cell" data-title="Scale">
+                    {charge.scale_reference}
                   </div>
                   <div class="report-cell" data-title="Price">
                     ${this.toDollars(charge.amount)}
