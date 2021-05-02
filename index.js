@@ -411,8 +411,9 @@ app.post('/api/orders', (req, res) => {
   let { startDate, endDate } = req.body.dates;
   let { currentPage, perPage } = req.body.pagination;
   knex('orders')
-  .select(['orders.id', 'orders.last_visited', 'customers.name', 'orders.total', 'orders.scale_reference'])
+  .select(['orders.id', 'orders.last_visited', 'customers.name', 'orders.total', 'orders.scale_reference', 'payments.payment_method'])
   .leftJoin('customers', 'orders.customer_id', 'customers.id')
+  .leftJoin('payments', 'orders.id', 'payments.order_id')
   .where('last_visited', '>=', startDate.toString())
   .where('last_visited', '<', endDate.toString())
   .orderBy('last_visited', 'desc')
@@ -430,11 +431,13 @@ app.post('/api/ordersearch', (req, res) => {
   let { currentPage, perPage } = req.body.pagination;
   let searchterm = req.body.searchterm;
   knex('orders')
-  .select(['orders.id', 'orders.last_visited', 'customers.name', 'orders.total', 'orders.scale_reference'])
+  .select(['orders.id', 'orders.last_visited', 'customers.name', 'orders.total', 'orders.scale_reference', 'payments.payment_method'])
   .leftJoin('customers', 'orders.customer_id', 'customers.id')
+  .leftJoin('payments', 'orders.id', 'payments.order_id')
   .where('orders.id', (Number(searchterm) || null))
   .orWhere('customers.name', 'ilike', `%${searchterm}%`)
   .orWhere('scale_reference', 'ilike', `%${searchterm}%`)
+  .orWhere('payments.payment_method', 'ilike', `%${searchterm}%`)
   .orderBy('last_visited', 'desc')
   .paginate({
     perPage: 200,
@@ -525,9 +528,10 @@ app.post('/api/rangereport', (req,res) => {
       .sum('quantity')
       .then((lineItems => {
         knex('charges')
-        .select(['charges.id', 'charges.order_id', 'charges.last_visited', 'charges.amount', 'customers.name as customer_name'])
+        .select(['charges.id', 'charges.order_id', 'charges.last_visited', 'charges.amount', 'customers.name as customer_name', 'orders.scale_reference as scale_reference'])
         .whereIn('order_id', orderIds)
         .leftJoin('customers', 'charges.customer_id', '=', 'customers.id')
+        .leftJoin('orders', 'charges.order_id', '=', 'orders.id')
         .then(charges => {
           knex('charges')
           .select(['customers.name as customer_name'])

@@ -1254,6 +1254,9 @@ class Transactions extends Component {
                     Customer
                   </TableCell>
                   <TableCell>
+                    Payment Method
+                  </TableCell>
+                  <TableCell>
                     Total
                   </TableCell>
                 </TableRow>
@@ -1265,6 +1268,7 @@ class Transactions extends Component {
                     <TableCell>{order.scale_reference}</TableCell>
                     <TableCell>{moment(order.last_visited).format('MM/DD/YYYY - hh:mm a')}</TableCell>
                     <TableCell>{order.name}</TableCell>
+                    <TableCell>{order.payment_method}</TableCell>
                     <TableCell>${this.toDollars(order.total)}</TableCell>
                   </TableRow>
                   )
