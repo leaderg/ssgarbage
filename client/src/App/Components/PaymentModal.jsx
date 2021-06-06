@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import ReactToPrint from 'react-to-print';
+import axios from 'axios';
 
 import {
   CircularProgress
@@ -33,8 +34,11 @@ class ComponentToPrint extends React.Component {
           360 Blackburn<br/>
           Salt Spring Island, BC V8K2B8<br/>
           (250) 537-2167<br/><br/>
-          {moment(this.props.date).format("LLL")}
-          Ref #: {this.props.orderNumber}<br/>
+          {moment(this.props.date).format("LLL")}<br/><br/>
+          Order Ref #: {this.props.orderNumber}<br/>
+          Scale Ref #: {this.props.orderForReceipt.order[0] ? this.props.orderForReceipt.order[0].scale_reference : "---"}<br/>
+          Customer: {this.props.orderForReceipt.customer[0] ? this.props.orderForReceipt.customer[0].name : "---"}<br/>
+          Pay Method: {this.props.orderForReceipt.payments[0] ? this.props.orderForReceipt.payments[0].payment_method : "---"}
 
         </div>
 
@@ -93,7 +97,8 @@ class PaymentsModal extends Component {
       payments: [],
       change: "0.00",
       date: "",
-      orderNumber: null
+      orderNumber: null,
+      orderForReceipt: {}
     }
   }
 
@@ -145,11 +150,16 @@ class PaymentsModal extends Component {
   }
 
   receiptView = (change, orderInfo) => {
+    axios
+    .get(`/api/orders/${orderInfo.id}`)
+    .then( res => {
     this.setState({
       receiptPage: true,
       change: change,
       orderNumber: orderInfo.id,
-      date: orderInfo.last_visited
+      date: orderInfo.last_visited,
+      orderForReceipt: res.data
+    })
     })
   }
 
@@ -161,7 +171,8 @@ class PaymentsModal extends Component {
       payments: [],
       change: "0.00",
       date: "",
-      orderNumber: null
+      orderNumber: null,
+      orderForReceipt: {}
     })
   }
 
@@ -174,7 +185,7 @@ class PaymentsModal extends Component {
           <ReactToPrint
               trigger={() => <div className="cr-receipt-print-btn noselect">Print Receipt</div>}
               content={() => this.componentRef}
-              pageStyle={`@page { size: 80mm ${85 + (this.props.lineItems.length * 6)}mm }`}
+              pageStyle={`@page { size: 80mm ${107 + (this.props.lineItems.length * 6)}mm }`}
             />
             <div  style={{display: 'none'}}>
             <ComponentToPrint
@@ -188,6 +199,7 @@ class PaymentsModal extends Component {
               discountActive={this.props.discountActive}
               date={this.state.date}
               orderNumber={this.state.orderNumber}
+              orderForReceipt={this.state.orderForReceipt}
             />
             </div>
             <div className="cr-receipt-close noselect" onClick={() => this.done()}>Done</div>
