@@ -54,7 +54,7 @@ import {
 
 import {
   MuiPickersUtilsProvider,
-  KeyboardDatePicker
+  KeyboardDatePicker, DateTimePicker
 } from "@material-ui/pickers";
 
 
@@ -95,6 +95,9 @@ class Transactions extends Component {
       addLineItem: false,
       editPayment: false,
       addPayment: false,
+      editDate: false,
+
+      editDateInput: null,
 
       scaleRefInput: "",
 
@@ -171,6 +174,20 @@ class Transactions extends Component {
         this.getOrders();
       });
     }
+  }
+
+  editDateChange = event => {
+    this.setState({editDateInput: event.format('YYYY-MM-DDTHH:mm:ssZ') })
+  }
+
+  //Add in Discount adjustment
+  editDateSubmit = () => {
+    let editSelectedOrder = this.state.editSelectedOrder
+    editSelectedOrder.order[0].last_visited = this.state.editDateInput
+    this.setState({ editSelectedOrder }, () => {
+      this.tallyDiscounts()
+      this.editDateToggle()
+    });
   }
 
   //Searchbar Function
@@ -266,6 +283,7 @@ class Transactions extends Component {
       this.setState({
         selectedOrder: res.data,
         editSelectedOrder: res.data,
+        editDateInput: res.data.order[0].last_visited,
         transactionModalToggle: true
       }, () => {
         this.tallyDiscounts()
@@ -355,6 +373,13 @@ class Transactions extends Component {
     this.setState({editCustomer: false})
       ) : (
     this.setState({editCustomer: true}))
+  }
+
+  editDateToggle = () => {
+    this.state.editDate ? (
+      this.setState({editDate: false, editDateInput: this.state.editSelectedOrder.order[0].last_visited})
+      ) : (
+      this.setState({editDate: true}))
   }
 
   editScaleRefToggle = () => {
@@ -522,7 +547,7 @@ class Transactions extends Component {
     editAddPayment.order_id = this.state.editSelectedOrder.order[0].id
     let editSelectedOrder = this.state.editSelectedOrder
     editSelectedOrder.payments.push(editAddPayment)
-    this.setState({ editSelectedOrder})
+    this.setState({ editSelectedOrder}, () => {this.addPaymentToggle()})
   }
 
   buildCharges = (payments) => {
@@ -814,6 +839,19 @@ class Transactions extends Component {
                       </TableCell>
                     </TableRow>
 
+                    <h3>Transaction Date</h3>
+                    <TableRow>
+                      <TableCell colSpan={5}>{
+                        editSelectedOrder.order[0] ?
+                        moment(editSelectedOrder.order[0].last_visited).format('MM/DD/YYYY - hh:mm a')
+                        : "No Customer Selected"}</TableCell>
+                      <TableCell>
+                        <IconButton aria-label="Quotes" onClick={this.editDateToggle}>
+                          <Edit />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+
                     <h3>Scale Reference</h3>
                     <TableRow>
                       <TableCell colSpan={5}>{editSelectedOrder.order[0] ? (editSelectedOrder.order[0].scale_reference === "" ? "No Scale Reference" : editSelectedOrder.order[0].scale_reference) : "No Scale Reference"}</TableCell>
@@ -958,6 +996,35 @@ class Transactions extends Component {
         <DialogActions>
           <Button variant="contained" color="secondary" onClick={this.editCustomerToggle}>
             Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
+      )
+
+    let editDate = (
+      <Dialog
+        open={this.state.editDate}
+        onClose={this.editDateToggle}
+        fullWidth={true}
+      >
+        <DialogTitle>Edit Date</DialogTitle>
+        <DialogContent>
+          <DateTimePicker
+              id="date-picker-dialog"
+              value={this.state.editDateInput}
+              onChange={this.editDateChange}
+              format="MM/DD/YYYY - hh:mm a"
+              KeyboardButtonProps={{
+                "aria-label": "change date"
+              }}
+            />
+        </DialogContent>
+        <DialogActions>
+          <Button variant="contained" color="secondary" onClick={this.editDateToggle}>
+            Cancel
+          </Button>
+          <Button variant="contained" color="primary" className={classes.button} onClick={this.editDateSubmit}>
+            Save
           </Button>
         </DialogActions>
       </Dialog>
@@ -1175,6 +1242,7 @@ class Transactions extends Component {
         <h2>Transactions</h2>
         {this.state.modalEdit ? editModal : displayModal}
         {editCustomer}
+        {editDate}
         {editScaleRef}
         {editLineItem}
         {addLineItem}
