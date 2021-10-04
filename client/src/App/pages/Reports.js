@@ -113,7 +113,8 @@ class Reports extends Component {
       chargeReportByCustomer: [],
       chequeReport: [],
       chequeReportByCustomer: [],
-      notes: []
+      notes: [],
+      hidden_from_reports: false
     }
   }
 
