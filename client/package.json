@@ -3,6 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@emotion/react": "^11.4.1",
+    "@emotion/styled": "^11.3.0",
+    "@mui/core": "^5.0.0-alpha.50",
+    "@mui/material": "^5.0.3",
+    "@mui/styled-engine-sc": "^5.0.3",
     "@react-pdf/renderer": "^1.6.8",
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.3.2",
@@ -14,7 +19,8 @@
     "react-dom": "^16.13.0",
     "react-router-dom": "^5.1.2",
     "react-scripts": "3.4.0",
-    "react-to-print": "^2.6.3"
+    "react-to-print": "^2.6.3",
+    "styled-components": "^5.3.1"
   },
   "scripts": {
     "start": "react-scripts start",
