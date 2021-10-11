@@ -1,4 +1,5 @@
-import React, { Component } from 'react';
+import React, { Component, useState } from 'react';
+import { Switch, FormControlLabel } from '@material-ui/core';
 import { Link } from 'react-router-dom';
 import { PDFDownloadLink, Page, Text, View, Document, StyleSheet  } from '@react-pdf/renderer'
 import moment from 'moment';
@@ -113,9 +114,13 @@ class Reports extends Component {
       chargeReportByCustomer: [],
       chequeReport: [],
       chequeReportByCustomer: [],
-      notes: []
+      notes: [],
+      paymentsOmit: {},
+      outputReady: false,
+      hidePayments: false
     }
   }
+
 
   componentDidMount() {
     this.getCategories();
@@ -169,6 +174,9 @@ class Reports extends Component {
       totalTax: 0,
       transactionAverage: 0
     }
+    let hidden_from_reports = this.state.hidden_from_reports
+    this.setState({outputReady: false}, () => {
+
     axios
     .post(`/api/rangereport`, { dates })
     .then(res => {
@@ -183,6 +191,7 @@ class Reports extends Component {
       let totalTax = res.data.totalTax
       let notes = res.data.notes
       let transactionAverage = totalSales/orderLength
+      let paymentsOmit = res.data.paymentsOmit
 
       let payments = {
         cash: this.paymentTypeTotal(res.data.payments, "Cash"),
@@ -192,7 +201,8 @@ class Reports extends Component {
         cheque: this.paymentTypeTotal(res.data.payments, "Cheque")
       }
 
-      this.setState({totalDiscount, totalSales, totalTax, notes, productReport, chargeReport, chargeReportByCustomer, chequeReport, chequeReportByCustomer,transactionAverage, payments, startDate, endDate })
+      this.setState({totalDiscount, totalSales, totalTax, notes, productReport, chargeReport, chargeReportByCustomer, chequeReport, chequeReportByCustomer,transactionAverage, payments, startDate, endDate }, () => {this.omitPaymentsProduct(paymentsOmit)})
+    })
     })
   }
 
@@ -273,35 +283,77 @@ class Reports extends Component {
     }
   }
 
-  // employeeArray = () => {
-  //   if (this.state.employees){
-  //       let output = []
-  //       for (let employee of this.state.employees) {
-  //         let total = 0;
-  //         for(let order of this.state.orders) {
-  //           if (employee.first_name == order.employee_name) {
-  //             total += (Number(order.total) - Number(order.tax));
-  //           }
-  //         }
-  //         output.push({name: employee.first_name, total: this.toDollars(total)})
-  //       }
-  //       return output;}
-  //   else {
-  //     return [{name: '', total: ''}]
-  //   }
-  // }
+  paymentHiddenToggle = (event) => {
+    this.setState({hidePayments: event.target.checked})
+  }
+
+  omitPaymentsProduct = (paymentsOmit) => {
+    let output = {}
+    output.gross = 0
+    output.net = 0
+    output.tax = 0
+    output.cash = 0
+    output.debit = 0
+    output.credit = 0
+    output.charge = 0
+    output.cheque = 0
+
+    paymentsOmit.forEach(paymentProduct => {
+
+      let paymentValue = paymentProduct.quantity*paymentProduct.price
+      let paymentTax = paymentValue*(paymentProduct.tax_percent/100) //something is fucked here...
+
+      output.gross += paymentValue
+      output.net += paymentValue
+      if (paymentProduct.taxed) {output.tax += paymentTax}
+
+      switch(paymentProduct.payment_method) {
+        case "Cash": output.cash += (paymentTax + paymentValue); break;
+        case "Debit": output.debit += (paymentTax + paymentValue); break;
+        case "Credit": output.credit += (paymentTax + paymentValue); break;
+        case "Charge": output.charge += (paymentTax + paymentValue); break;
+        case "Cheque": output.cheque += (paymentTax + paymentValue); break;
+      }
+    })
+    this.setState({paymentsOmit: output, outputReady: true})
+  }
 
   render() {
     let categoryTotals = this.categoryArray()
-    // let employeeTotals = this.employeeArray()
+    let outputReady = this.state.outputReady
+    let gross, net, tax, totalSales, cash, debit, credit, charge;
+
+    if (this.state.hidePayments) {
+      gross = this.toDollars(this.state.totalSales + this.state.totalDiscount - this.state.totalTax - this.state.paymentsOmit.gross)
+      net = this.toDollars(this.state.totalSales - this.state.totalTax - this.state.paymentsOmit.net)
+      tax = this.toDollars(this.state.totalTax - this.state.paymentsOmit.tax)
+      totalSales = this.toDollars(this.state.totalSales - this.state.paymentsOmit.net - this.state.paymentsOmit.tax) //Ajoute
+      cash = this.toDollars(this.state.payments.cash - this.state.paymentsOmit.cash)
+      debit = this.toDollars(this.state.payments.debit - this.state.paymentsOmit.debit)
+      credit = this.toDollars(this.state.payments.credit - this.state.paymentsOmit.credit)
+      charge = this.toDollars(this.state.payments.charge - this.state.paymentsOmit.charge)
+      } else {
+      gross = this.toDollars(this.state.totalSales + this.state.totalDiscount - this.state.totalTax)
+      net = this.toDollars(this.state.totalSales - this.state.totalTax)
+      tax = this.toDollars(this.state.totalTax)
+      totalSales = this.toDollars(this.state.totalSales)
+      cash = this.toDollars(this.state.payments.cash)
+      debit = this.toDollars(this.state.payments.debit)
+      credit = this.toDollars(this.state.payments.credit)
+      charge = this.toDollars(this.state.payments.charge)
+    }
+
+
     return (
     <div className="App">
       <h1>Reports</h1>
       <h2>Select a date range</h2>
+      { outputReady ? (
       <PDFDownloadLink document={
         <Document>
           <Page size="A4" style={styles.page}>
             <Text style={styles.header}>SS Garbage Sales Report</Text>
+            {this.state.hidePayments ? <Text style={styles.header}>Account Payments Hidden</Text> : null}
             <View>
               <Text>Date Range:</Text>
               <Text>From {moment(this.state.startDate).format('MM-DD-YYYY')} to {moment(this.state.endDate).format('MM-DD-YYYY')}</Text>
@@ -316,13 +368,15 @@ class Reports extends Component {
               <Text style={styles.tallyLine}>Total Sales</Text>
             </View>
             <View style={styles.value}>
-              <Text style={styles.tallyLine}>${this.toDollars(this.state.totalSales + this.state.totalDiscount - this.state.totalTax)}</Text>
+              <Text style={styles.tallyLine}>${gross}</Text>
               <Text style={styles.tallyLine}>${this.toDollars(this.state.totalDiscount)}</Text>
-              <Text style={styles.tallyLine}>${this.toDollars(this.state.totalSales - this.state.totalTax)}</Text>
-              <Text style={styles.tallyLine}>${this.toDollars(this.state.totalTax)}</Text>
-              <Text style={styles.tallyLine}>{this.toDollars(this.state.totalSales) }</Text>
+              <Text style={styles.tallyLine}>${net}</Text>
+              <Text style={styles.tallyLine}>${tax}</Text>
+              <Text style={styles.tallyLine}>${totalSales}</Text>
               </View>
             </View>
+
+
             <Text style={styles.title}>Payment Methods</Text>
             <View style={styles.section}>
               <View style={styles.label}>
@@ -332,25 +386,13 @@ class Reports extends Component {
               <Text style={styles.tallyLine}>Charge</Text>
               </View>
               <View style={styles.value}>
-              <Text style={styles.tallyLine}>${this.toDollars(this.state.payments.cash)}</Text>
-              <Text style={styles.tallyLine}>${this.toDollars(this.state.payments.debit)}</Text>
-              <Text style={styles.tallyLine}>${this.toDollars(this.state.payments.credit)}</Text>
-              <Text style={styles.tallyLine}>${this.toDollars(this.state.payments.charge)}</Text>
+              <Text style={styles.tallyLine}>${cash}</Text>
+              <Text style={styles.tallyLine}>${debit}</Text>
+              <Text style={styles.tallyLine}>${credit}</Text>
+              <Text style={styles.tallyLine}>${charge}</Text>
               </View>
             </View>
-{/*            <Text style={styles.title}>Employee Net Sales</Text>
-            <View style={styles.section}>
-              <View style={styles.label}>
-                {employeeTotals.map((employee) => {
-                return(<Text style={styles.tallyLine}>{employee.name}</Text>)
-                })}
-              </View>
-              <View style={styles.value}>
-                {employeeTotals.map((employee) => {
-                return(<Text style={styles.tallyLine}>${employee.total}</Text>)
-                })}
-              </View>
-            </View>*/}
+            {this.state.hidePayments ? null : (<>
             <Text style={styles.title}>Category Totals</Text>
             <View style={styles.section}>
               <View style={styles.label}>
@@ -372,12 +414,14 @@ class Reports extends Component {
                 })}
               </View>
             </View>
+            </>)}
 
           </Page>
         </Document>
       } fileName={`SSGarbageSales${moment(this.state.startDate).format('YYYY-MM-DD')}to${moment(this.state.endDate).format('YYYY-MM-DD')}.pdf`}>
       {({ blob, url, loading, error }) => (<div className="download-button">{loading ? 'Loading document...' : 'Download Report!'}</div>)}
-      </PDFDownloadLink>
+      </PDFDownloadLink> ) : (<div className="download-button">Select Dates</div> )}
+
 
       <input type="date" name="date" onChange={this.startDateChange} />{` - `}
       <input type="date" name="date" onChange={this.endDateChange} />
@@ -388,6 +432,8 @@ class Reports extends Component {
       <button onClick={() => this.currentMonthDateRange()}>Month To Date</button>
       <button onClick={() => this.lastMonthDateRange()}>Last Month</button>
       <br/>
+      <FormControlLabel control={<Switch color="primary" onChange={this.paymentHiddenToggle}/>} label="Hide Account Payments" />
+
 
       <div className="report-housing">
         <div>
@@ -431,175 +477,176 @@ class Reports extends Component {
             <h3>Charges</h3>
 
 {/*===============================*/}
+        { outputReady ? (
         <PDFDownloadLink document={
-        <Document>
-          <Page size="A4" style={styles.page}>
-            <Text style={styles.header}>SS Garbage Charge Report</Text>
-            <View>
-              <Text>Date Range:</Text>
-              <Text>From {moment(this.state.startDate).format('MM-DD-YYYY')} to {moment(this.state.endDate).format('MM-DD-YYYY')}</Text>
-            </View>
-            <Text style={styles.title}>Total Charge Amount By Customer In Date Range</Text>
-            <View style={styles.section}>
-              <View style={styles.table}>
-                <View style={styles.row} wrap={false}>
-                  <View style={styles.biCol}>
-                    <Text style={styles.cell}>Customer</Text>
-                  </View>
-                  <View style={styles.biCol}>
-                    <Text style={styles.cell}>Amount</Text>
-                  </View>
-                </View>
-                {this.state.chargeReportByCustomer.length === 0 ? (
-
-                <Text style={styles.header}>No Orders In This Date Range</Text>
-
-                 ) : (
-
-                this.state.chargeReportByCustomer.map(customer => {
-                return(
-                <View style={styles.row} wrap={false}>
-                  <View style={styles.biCol}>
-                    <Text style={styles.cell}>{customer.customer_name || 'Unassigned'}</Text>
-                  </View>
-                  <View style={styles.biCol}>
-                    <Text style={styles.cell}>${this.toDollars(customer.sum)}</Text>
-                  </View>
-                </View>
-
-                )}))}
+          <Document>
+            <Page size="A4" style={styles.page}>
+              <Text style={styles.header}>SS Garbage Charge Report</Text>
+              <View>
+                <Text>Date Range:</Text>
+                <Text>From {moment(this.state.startDate).format('MM-DD-YYYY')} to {moment(this.state.endDate).format('MM-DD-YYYY')}</Text>
               </View>
-            </View>
-            <Text style={styles.title}>Charge Orders</Text>
-            <View style={styles.section}>
-              <View style={styles.table}>
-                <View style={styles.row} wrap={false}>
-                  <View style={styles.cinqcol}>
-                    <Text style={styles.cell}>Transaction ID</Text>
+              <Text style={styles.title}>Total Charge Amount By Customer In Date Range</Text>
+              <View style={styles.section}>
+                <View style={styles.table}>
+                  <View style={styles.row} wrap={false}>
+                    <View style={styles.biCol}>
+                      <Text style={styles.cell}>Customer</Text>
+                    </View>
+                    <View style={styles.biCol}>
+                      <Text style={styles.cell}>Amount</Text>
+                    </View>
                   </View>
-                  <View style={styles.cinqcol}>
-                    <Text style={styles.cell}>Scale Reference</Text>
+                  {this.state.chargeReportByCustomer.length === 0 ? (
+
+                  <Text style={styles.header}>No Orders In This Date Range</Text>
+
+                   ) : (
+
+                  this.state.chargeReportByCustomer.map(customer => {
+                  return(
+                  <View style={styles.row} wrap={false}>
+                    <View style={styles.biCol}>
+                      <Text style={styles.cell}>{customer.customer_name || 'Unassigned'}</Text>
+                    </View>
+                    <View style={styles.biCol}>
+                      <Text style={styles.cell}>${this.toDollars(customer.sum)}</Text>
+                    </View>
                   </View>
-                  <View style={styles.cinqcol}>
-                    <Text style={styles.cell}>Customer</Text>
-                  </View>
-                  <View style={styles.cinqcol}>
-                    <Text style={styles.cell}>Amount</Text>
-                  </View>
-                  <View style={styles.cinqcol}>
-                    <Text style={styles.cell}>Date</Text>
-                  </View>
+
+                  )}))}
                 </View>
-                {this.state.chargeReport.length === 0 ? (
-
-                <Text style={styles.header}>No Orders In This Date Range</Text>
-
-                 ) : (
-
-                this.state.chargeReport.map(charge => {
-                return(
-                <View style={styles.row} wrap={false}>
-                  <View style={styles.cinqcol}>
-                    <Text style={styles.cell}>{charge.order_id}</Text>
-                  </View>
-                  <View style={styles.cinqcol}>
-                    <Text style={styles.cell}>{charge.scale_reference}</Text>
-                  </View>
-                  <View style={styles.cinqcol}>
-                    <Text style={styles.cell}>{charge.customer_name || 'Unassigned'}</Text>
-                  </View>
-                  <View style={styles.cinqcol}>
-                    <Text style={styles.cell}>${this.toDollars(charge.amount)}</Text>
-                  </View>
-                  <View style={styles.cinqcol}>
-                    <Text style={styles.cell}>{moment(charge.last_visited).format('MM/DD/YYYY - hh:mm a')}</Text>
-                  </View>
-                </View>
-
-                )}))}
-
-                 </View>
-            </View>
-                 <Text style={styles.title}>Total Cheque Amount By Customer In Date Range</Text>
-            <View style={styles.section}>
-              <View style={styles.table}>
-                <View style={styles.row} wrap={false}>
-                  <View style={styles.biCol}>
-                    <Text style={styles.cell}>Customer</Text>
-                  </View>
-                  <View style={styles.biCol}>
-                    <Text style={styles.cell}>Amount</Text>
-                  </View>
-                </View>
-                {this.state.chequeReportByCustomer.length === 0 ? (
-
-                <Text style={styles.header}>No Orders In This Date Range</Text>
-
-                 ) : (
-
-                this.state.chequeReportByCustomer.map(customer => {
-                return(
-                <View style={styles.row} wrap={false}>
-                  <View style={styles.biCol}>
-                    <Text style={styles.cell}>{customer.customer_name || 'Unassigned'}</Text>
-                  </View>
-                  <View style={styles.biCol}>
-                    <Text style={styles.cell}>${this.toDollars(customer.sum)}</Text>
-                  </View>
-                </View>
-
-                )}))}
               </View>
-            </View>
-            <Text style={styles.title}>Cheque Orders</Text>
-            <View style={styles.section}>
-              <View style={styles.table}>
-                <View style={styles.row} wrap={false}>
-                  <View style={styles.quartcol}>
-                    <Text style={styles.cell}>Transaction ID</Text>
+              <Text style={styles.title}>Charge Orders</Text>
+              <View style={styles.section}>
+                <View style={styles.table}>
+                  <View style={styles.row} wrap={false}>
+                    <View style={styles.cinqcol}>
+                      <Text style={styles.cell}>Transaction ID</Text>
+                    </View>
+                    <View style={styles.cinqcol}>
+                      <Text style={styles.cell}>Scale Reference</Text>
+                    </View>
+                    <View style={styles.cinqcol}>
+                      <Text style={styles.cell}>Customer</Text>
+                    </View>
+                    <View style={styles.cinqcol}>
+                      <Text style={styles.cell}>Amount</Text>
+                    </View>
+                    <View style={styles.cinqcol}>
+                      <Text style={styles.cell}>Date</Text>
+                    </View>
                   </View>
-                  <View style={styles.quartcol}>
-                    <Text style={styles.cell}>Customer</Text>
+                  {this.state.chargeReport.length === 0 ? (
+
+                  <Text style={styles.header}>No Orders In This Date Range</Text>
+
+                   ) : (
+
+                  this.state.chargeReport.map(charge => {
+                  return(
+                  <View style={styles.row} wrap={false}>
+                    <View style={styles.cinqcol}>
+                      <Text style={styles.cell}>{charge.order_id}</Text>
+                    </View>
+                    <View style={styles.cinqcol}>
+                      <Text style={styles.cell}>{charge.scale_reference}</Text>
+                    </View>
+                    <View style={styles.cinqcol}>
+                      <Text style={styles.cell}>{charge.customer_name || 'Unassigned'}</Text>
+                    </View>
+                    <View style={styles.cinqcol}>
+                      <Text style={styles.cell}>${this.toDollars(charge.amount)}</Text>
+                    </View>
+                    <View style={styles.cinqcol}>
+                      <Text style={styles.cell}>{moment(charge.last_visited).format('MM/DD/YYYY - hh:mm a')}</Text>
+                    </View>
                   </View>
-                  <View style={styles.quartcol}>
-                    <Text style={styles.cell}>Amount</Text>
+
+                  )}))}
+
+                   </View>
+              </View>
+                   <Text style={styles.title}>Total Cheque Amount By Customer In Date Range</Text>
+              <View style={styles.section}>
+                <View style={styles.table}>
+                  <View style={styles.row} wrap={false}>
+                    <View style={styles.biCol}>
+                      <Text style={styles.cell}>Customer</Text>
+                    </View>
+                    <View style={styles.biCol}>
+                      <Text style={styles.cell}>Amount</Text>
+                    </View>
                   </View>
-                  <View style={styles.quartcol}>
-                    <Text style={styles.cell}>Date</Text>
+                  {this.state.chequeReportByCustomer.length === 0 ? (
+
+                  <Text style={styles.header}>No Orders In This Date Range</Text>
+
+                   ) : (
+
+                  this.state.chequeReportByCustomer.map(customer => {
+                  return(
+                  <View style={styles.row} wrap={false}>
+                    <View style={styles.biCol}>
+                      <Text style={styles.cell}>{customer.customer_name || 'Unassigned'}</Text>
+                    </View>
+                    <View style={styles.biCol}>
+                      <Text style={styles.cell}>${this.toDollars(customer.sum)}</Text>
+                    </View>
                   </View>
+
+                  )}))}
                 </View>
-                {this.state.chequeReport.length === 0 ? (
-
-                <Text style={styles.header}>No Orders In This Date Range</Text>
-
-                 ) : (
-
-                this.state.chequeReport.map(cheque => {
-                return(
-                <View style={styles.row} wrap={false}>
-                  <View style={styles.quartcol}>
-                    <Text style={styles.cell}>{cheque.order_id}</Text>
+              </View>
+              <Text style={styles.title}>Cheque Orders</Text>
+              <View style={styles.section}>
+                <View style={styles.table}>
+                  <View style={styles.row} wrap={false}>
+                    <View style={styles.quartcol}>
+                      <Text style={styles.cell}>Transaction ID</Text>
+                    </View>
+                    <View style={styles.quartcol}>
+                      <Text style={styles.cell}>Customer</Text>
+                    </View>
+                    <View style={styles.quartcol}>
+                      <Text style={styles.cell}>Amount</Text>
+                    </View>
+                    <View style={styles.quartcol}>
+                      <Text style={styles.cell}>Date</Text>
+                    </View>
                   </View>
-                  <View style={styles.quartcol}>
-                    <Text style={styles.cell}>{cheque.customer_name || 'Unassigned'}</Text>
-                  </View>
-                  <View style={styles.quartcol}>
-                    <Text style={styles.cell}>${this.toDollars(cheque.amount)}</Text>
-                  </View>
-                  <View style={styles.quartcol}>
-                    <Text style={styles.cell}>{moment(cheque.last_visited).format('MM/DD/YYYY - hh:mm a')}</Text>
-                  </View>
-                </View>
+                  {this.state.chequeReport.length === 0 ? (
 
-                )}))}
+                  <Text style={styles.header}>No Orders In This Date Range</Text>
 
-                 </View>
-            </View>
-          </Page>
-        </Document>
-      } fileName={`SSGarbageCharges${moment(this.state.startDate).format('YYYY-MM-DD')}to${moment(this.state.endDate).format('YYYY-MM-DD')}.pdf`}>
-      {({ blob, url, loading, error }) => (<div>{loading ? 'Loading document...' : 'Download Charge and Cheque Report'}</div>)}
-      </PDFDownloadLink>
+                   ) : (
+
+                  this.state.chequeReport.map(cheque => {
+                  return(
+                  <View style={styles.row} wrap={false}>
+                    <View style={styles.quartcol}>
+                      <Text style={styles.cell}>{cheque.order_id}</Text>
+                    </View>
+                    <View style={styles.quartcol}>
+                      <Text style={styles.cell}>{cheque.customer_name || 'Unassigned'}</Text>
+                    </View>
+                    <View style={styles.quartcol}>
+                      <Text style={styles.cell}>${this.toDollars(cheque.amount)}</Text>
+                    </View>
+                    <View style={styles.quartcol}>
+                      <Text style={styles.cell}>{moment(cheque.last_visited).format('MM/DD/YYYY - hh:mm a')}</Text>
+                    </View>
+                  </View>
+
+                  )}))}
+
+                   </View>
+              </View>
+            </Page>
+          </Document>
+        } fileName={`SSGarbageCharges${moment(this.state.startDate).format('YYYY-MM-DD')}to${moment(this.state.endDate).format('YYYY-MM-DD')}.pdf`}>
+        {({ blob, url, loading, error }) => (<div>{loading ? 'Loading document...' : 'Download Charge and Cheque Report'}</div>)}
+        </PDFDownloadLink> ) : (<div>Select Dates</div>)}
 {/*================================*/}
 
             <div class="report-wrapper">
@@ -646,131 +693,6 @@ class Reports extends Component {
                     })}
               </div>
             </div>
-          {/*<div>
-            <h3>Orders In Date Range</h3>*/}
-
-{/*===============================*/}
-    {/*    <PDFDownloadLink document={
-        <Document>
-          <Page size="A4" style={styles.page}>
-            <Text style={styles.header}>SS Garbage Order Report</Text>
-            <View>
-              <Text>Date Range:</Text>
-              <Text>From {moment(this.state.startDate).format('MM-DD-YYYY')} to {moment(this.state.endDate).format('MM-DD-YYYY')}</Text>
-            </View>
-            <Text style={styles.title}>Orders</Text>
-            <View style={styles.section}>
-              <View style={styles.table}>
-                <View style={styles.row}>
-                  <View style={styles.col}>
-                    <Text style={styles.cell}>Order #</Text>
-                  </View>
-                  <View style={styles.col}>
-                    <Text style={styles.cell}>Date</Text>
-                  </View>
-                  <View style={styles.col}>
-                    <Text style={styles.cell}>Employee</Text>
-                  </View>
-                  <View style={styles.col}>
-                    <Text style={styles.cell}>Customer</Text>
-                  </View>
-                  <View style={styles.col}>
-                    <Text style={styles.cell}>Total</Text>
-                  </View>
-                </View>
-                {this.state.orders.length === 0 ? (
-
-                <Text style={styles.header}>No Orders In This Date Range</Text>
-
-                 ) : (
-
-                this.state.orders.map(order => {
-                return(
-                <View style={styles.row}>
-                  <View style={styles.col}>
-                    <Text style={styles.cell}>{order.id}</Text>
-                  </View>
-                  <View style={styles.col}>
-                    <Text style={styles.cell}>{moment(order.last_visited).format('YYYY-MM-DD   HH:mm')}</Text>
-                  </View>
-                  <View style={styles.col}>
-                    <Text style={styles.cell}>{order.employee_name || "----"}</Text>
-                  </View>
-                  <View style={styles.col}>
-                    <Text style={styles.cell}>{order.customer_name || "----"}</Text>
-                  </View>
-                  <View style={styles.col}>
-                    <Text style={styles.cell}>${this.toDollars(order.total)}</Text>
-                  </View>
-                </View>
-
-                )}))}
-              </View>
-            </View>
-
-          </Page>
-        </Document>
-      } fileName={`SSGarbageOrders${moment(this.state.startDate).format('YYYY-MM-DD')}to${moment(this.state.endDate).format('YYYY-MM-DD')}.pdf`}>
-      {({ blob, url, loading, error }) => (<div>{loading ? 'Loading document...' : 'Download Report!'}</div>)}
-      </PDFDownloadLink>*/}
-{/*================================*/}
-
-{/*            <div class="report-wrapper">
-
-              <div class="report-table">
-
-                <div class="report-row report-header">
-                  <div class="report-cell">
-                    Order #
-                  </div>
-                  <div class="report-cell">
-                    Date
-                  </div>
-                  <div class="report-cell">
-                    Customer
-                  </div>
-                  <div class="report-cell">
-                    Employee
-                  </div>
-                  <div class="report-cell">
-                    Total
-                  </div>
-                </div>
-
-            {this.state.orders.length === 0 ? (
-
-                <div class="report-row">
-                  <div class="report-cell">
-                    No Orders In This Date Range
-                  </div>
-                </div>
-
-            ) : (
-            this.state.orders.map((order, index) => {
-              return(
-
-                <div style={{cursor: "pointer"}} class="report-row darken" onClick={() => this.singleOrderInfo(order.id)}>
-                  <div class="report-cell" data-title="Order #">
-                    {order.id}
-                  </div>
-                  <div class="report-cell" data-title="Date">
-                    {moment(order.last_visited).format('YYYY-MM-DD')}
-                  </div>
-                  <div class="report-cell" data-title="Customer">
-                    {order.customer_name || "----"}
-                  </div>
-                  <div class="report-cell" data-title="Employee">
-                    {order.employee_name || "----"}
-                  </div>
-                  <div class="report-cell" data-title="Total">
-                    ${this.toDollars(order.total)}
-                  </div>
-                </div>
-            )}))}
-
-              </div>
-            </div>*/}
-
 
           <div>
             <h3>Product Performance</h3>
@@ -790,8 +712,7 @@ class Reports extends Component {
                     Total
                   </div>
                 </div>
-
-                          {this.state.productReport.map((product) => {
+                      {this.state.productReport.map((product) => {
                             return(
 
                 <div class="report-row">

@@ -506,6 +506,7 @@ app.post('/api/rangereport', (req,res) => {
   let orderIds = [];
   let lineItemIds = [];
   let chargeIds = [];
+
   knex('orders')
   .select(['orders.id', 'orders.last_visited', 'orders.tax', 'orders.total', 'orders.discount', 'customers.name as customer_name', 'employees.first_name as employee_name'])
   .where('last_visited', '>=', startDate.toString())
@@ -574,7 +575,32 @@ app.post('/api/rangereport', (req,res) => {
                     output.totalSales += Number(order.total)
                     output.totalTax += Number(order.tax)
                   })
-                  res.json(output)
+                  //MMBS
+                  let productIds = [];
+                  output.paymentsOmit = []
+                  knex('products')
+                  .where({hide_tab: true})
+                  .then( productList => {
+                    productList.forEach(product => {
+                      productIds.push(product.id)
+                    })
+                    knex('line_items')
+                    .select([
+                      'line_items.quantity',
+                      'products.price as price',
+                      'products.tax_percent as tax_percent',
+                      'products.taxed as taxed',
+                      'payments.payment_method as payment_method'])
+                    .whereIn('line_items.product_id', productIds)
+                    .whereIn('line_items.order_id', orderIds)
+                    .leftJoin('products', 'line_items.product_id', '=', 'products.id')
+                    .leftJoin('payments', 'line_items.order_id', '=', 'payments.order_id')
+                    .then(paymentsStats => {
+                      output.paymentsOmit = paymentsStats;
+                      res.json(output)
+                    })
+                  })
+                    //MMBS
                 })
               })
             })
@@ -586,7 +612,37 @@ app.post('/api/rangereport', (req,res) => {
   .catch(err => {res.send(err)})
 })
 
+// MMBS -
+// Takes in order IDs
+// Gets all product ID's with Payment bool Flag.
+// Saves product ID's and their price
+// Finds all line items with matching orders and product IDs, then sums the quantity.
+// Quantity * price to get an amount.
 
+// MICKY MOUSE SHIT BECAUSE ONLY ONE ITEM CAN HAVE THE FLAG.
+
+paymentRemoval = async ( orderIds ) => {
+
+  let output = {};
+  knex('products')
+    .where({hide_tab: true})
+    .then( productList => {
+      productList.forEach(product => {
+      productIds.push(product.id)
+      })
+      knex('line_items')
+      .whereIn('product_id', productIds)
+      .whereIn('order_id', orderIds)
+      .sum('quantity')
+      .then( productQuantity => {
+        let sum = productQuantity[0].sum
+        output.removePaymentSales = sum*productList[0].price,
+        output.removePaymentTaxes = productList[0].taxed ? sum*productList[0].price*productList[0].tax_percent/100 : 0
+        output.removePaymentTotal = output.removePaymentSales+output.removePaymentTaxes
+      })
+    })
+
+}
 
 
 
